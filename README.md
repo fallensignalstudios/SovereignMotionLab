@@ -81,7 +81,7 @@ backends against.
    and build the project.
 2. Start the sidecar: `python3 -m sovereign_motion serve`.
 3. Open **Tools > Sovereign Motion Studio** and click **Check Sidecar**.
-4. Set **Target Skeleton** (e.g. `SK_Mannequin`, the UE4 one, or UE5 Manny's `SK_Mannequin`).
+4. Set **Target Skeleton** (e.g. UE5's `SK_Mannequin`, shared by Manny and Quinn, or the UE4 `SK_Mannequin`).
    Its reference pose is sent with the request, and the mock animates it directly. Limbs are found by
    standard Mannequin bone names (`pelvis`, `thigh_l`, `calf_l`, `foot_l`, `ball_l`, `upperarm_l`,
    `lowerarm_l`, ...), and the mesh's facing comes from its feet.
@@ -106,6 +106,10 @@ and fingers, twist bones and spine don't move. It walks with soft knees and lowe
 a few cm to keep the feet on the floor, because results only carry root translation. Real backends
 supply their own hip motion.
 
+Tested skeletons: `sidecar/tests/fixtures/` holds the reference poses of the UE4 Mannequin (68 bones),
+UE5 Manny and UE5 Quinn (89 bones each), extracted from FBX exports. Every target-skeleton and
+foot-lock test runs on all three.
+
 ### Foot locking
 
 `sidecar/sovereign_motion/postprocess/footlock.py` runs after every backend. During each contact
@@ -114,7 +118,7 @@ are re-solved with two-bone IK. The knee keeps its bend plane and the foot keeps
 After lift-off the foot eases back to the original motion over 4 frames. Frames where a planted
 foot is out of the leg's reach are counted and reported, since that usually points at a
 stride/contact mismatch in the source motion. On the example walk it takes mean slide from about
-50 cm/s to under 2 cm/s, on both the mock skeleton and the UE4 Mannequin.
+50 cm/s to under 2 cm/s on the mock skeleton, the UE4 Mannequin, and UE5 Manny and Quinn.
 
 The sidecar URL is set in Project Settings > Plugins > Sovereign Motion Studio.
 `USovereignMotionBakeLibrary` exposes baking and result loading to Editor Utility Blueprints.

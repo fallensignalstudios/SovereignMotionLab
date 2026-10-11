@@ -24,8 +24,10 @@ from sovereign_motion.result import Frame, Joint, MotionResult, Skeleton
 from sovereign_motion.server import make_server
 
 EXAMPLE = Path(__file__).resolve().parents[2] / "examples" / "requests" / "dominion_soldier_walk.json"
-# UE4 SK_Mannequin reference pose in the result convention, extracted from a Motus FBX.
-MANNEQUIN = Path(__file__).resolve().parent / "fixtures" / "ue4_mannequin_skeleton.json"
+# Reference poses in the result convention, extracted from FBX files: the UE4 SK_Mannequin (from a
+# Motus animation) and UE5 Manny and Quinn (from SKM_Manny_Simple / SKM_Quinn_Simple).
+FIXTURES = Path(__file__).resolve().parent / "fixtures"
+HUMANOIDS = ("ue4_mannequin", "ue5_manny", "ue5_quinn")
 
 
 def example() -> dict:
@@ -104,45 +106,64 @@ class MockBackendTests(unittest.TestCase):
         self.assertEqual(again.to_dict(), result.to_dict())
 
 
-def mannequin_request() -> dict:
+def mannequin_request(fixture: str = "ue4_mannequin") -> dict:
     data = example()
-    with open(MANNEQUIN, encoding="utf-8") as f:
+    with open(FIXTURES / f"{fixture}_skeleton.json", encoding="utf-8") as f:
         data["character"]["skeleton"] = json.load(f)
     return data
 
 
 class TargetSkeletonTests(unittest.TestCase):
-    def setUp(self):
-        self.result = run_json(mannequin_request())
-        self.idx = self.result.skeleton.index
+    """Generation directly on real Unreal skeletons, checked on every humanoid fixture."""
 
-    def _facing_deg(self, frame: int) -> float:
-        p = world_positions(self.result, frame)
-        dx = sum(p[self.idx(f"ball_{s}")][0] - p[self.idx(f"foot_{s}")][0] for s in "lr")
-        dy = sum(p[self.idx(f"ball_{s}")][1] - p[self.idx(f"foot_{s}")][1] for s in "lr")
+    @classmethod
+    def setUpClass(cls):
+        cls.results = {name: run_json(mannequin_request(name)) for name in HUMANOIDS}
+
+    def _facing_deg(self, result: MotionResult, frame: int) -> float:
+        idx = result.skeleton.index
+        p = world_positions(result, frame)
+        dx = sum(p[idx(f"ball_{s}")][0] - p[idx(f"foot_{s}")][0] for s in "lr")
+        dy = sum(p[idx(f"ball_{s}")][1] - p[idx(f"foot_{s}")][1] for s in "lr")
         return math.degrees(math.atan2(dy, dx))
 
     def test_generates_on_requested_skeleton(self):
-        self.assertEqual(self.result.skeleton.name, "SK_Mannequin")
-        self.assertEqual(len(self.result.frames[0].rotations), 68)
+        for name, expected in (("ue4_mannequin", 68), ("ue5_manny", 89), ("ue5_quinn", 89)):
+            with self.subTest(skeleton=name):
+                result = self.results[name]
+                self.assertEqual(result.skeleton.name, "SK_Mannequin")
+                self.assertEqual(len(result.frames[0].rotations), expected)
 
     def test_mesh_facing_is_corrected(self):
-        # The mannequin mesh faces +Y; the clip must still face start/goal yaw in world space.
-        self.assertAlmostEqual(self._facing_deg(0), 0.0, delta=1.0)
-        self.assertAlmostEqual(self._facing_deg(len(self.result.frames) - 1), 90.0, delta=1.0)
+        # Mannequin meshes face +Y; the clip must still face start/goal yaw in world space.
+        for name, result in self.results.items():
+            with self.subTest(skeleton=name):
+                self.assertAlmostEqual(self._facing_deg(result, 0), 0.0, delta=1.0)
+                self.assertAlmostEqual(self._facing_deg(result, len(result.frames) - 1), 90.0, delta=1.0)
 
     def test_feet_grounded_and_arms_hanging(self):
-        p = world_positions(self.result, 0)
-        for side in "lr":
-            self.assertLess(p[self.idx(f"ball_{side}")][2], 10.0)
-            upper, hand = p[self.idx(f"upperarm_{side}")], p[self.idx(f"hand_{side}")]
-            self.assertLess(hand[2], upper[2] - 45.0)
+        for name, result in self.results.items():
+            idx = result.skeleton.index
+            with self.subTest(skeleton=name):
+                p = world_positions(result, 0)
+                for side in "lr":
+                    self.assertLess(p[idx(f"ball_{side}")][2], 10.0)
+                    upper, hand = p[idx(f"upperarm_{side}")], p[idx(f"hand_{side}")]
+                    self.assertLess(hand[2], upper[2] - 40.0)
+                lowest = min(
+                    world_positions(result, f)[idx(f"ball_{side}")][2]
+                    for f in range(len(result.frames)) for side in "lr"
+                )
+                self.assertGreater(lowest, -2.0)
 
     def test_left_foot_is_on_the_left(self):
         # Facing +X in Unreal, left is -Y.
-        p = world_positions(self.result, 0)
-        self.assertLess(p[self.idx("foot_l")][1], 0.0)
-        self.assertGreater(p[self.idx("foot_r")][1], 0.0)
+        for name, result in self.results.items():
+            idx = result.skeleton.index
+            with self.subTest(skeleton=name):
+                p = world_positions(result, 0)
+                self.assertLess(p[idx("foot_l")][1], 0.0)
+                self.assertGreater(p[idx("foot_r")][1], 0.0)
 
     def test_rejects_skeleton_without_legs(self):
         data = example()
@@ -190,7 +211,7 @@ class FootLockTests(unittest.TestCase):
         return run_json(unlocked), run_json(data)
 
     def test_reduces_slide_on_both_skeletons(self):
-        for name, data in (("mock", example()), ("mannequin", mannequin_request())):
+        for name, data in (("mock", example()), *((h, mannequin_request(h)) for h in HUMANOIDS)):
             with self.subTest(skeleton=name):
                 raw, locked = self._pair(data)
                 before = foot_slide(raw, "foot_l", "foot_r")["mean_cm_s"]

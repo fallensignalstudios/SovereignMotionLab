@@ -1,0 +1,806 @@
+{
+ "name": "SK_Mannequin",
+ "joints": [
+  {
+   "name": "root",
+   "parent": -1,
+   "offset": [
+    0.0,
+    -0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "pelvis",
+   "parent": 0,
+   "offset": [
+    -0.0,
+    2.2809,
+    95.8968
+   ]
+  },
+  {
+   "name": "spine_01",
+   "parent": 1,
+   "offset": [
+    0.0,
+    -0.233,
+    3.6697
+   ]
+  },
+  {
+   "name": "spine_02",
+   "parent": 2,
+   "offset": [
+    -0.0,
+    1.2761,
+    6.6742
+   ]
+  },
+  {
+   "name": "spine_03",
+   "parent": 3,
+   "offset": [
+    -0.0,
+    0.9272,
+    7.1786
+   ]
+  },
+  {
+   "name": "spine_04",
+   "parent": 4,
+   "offset": [
+    -0.0,
+    -0.5332,
+    8.5072
+   ]
+  },
+  {
+   "name": "spine_05",
+   "parent": 5,
+   "offset": [
+    0.0,
+    -3.1929,
+    19.1758
+   ]
+  },
+  {
+   "name": "neck_01",
+   "parent": 6,
+   "offset": [
+    -0.0,
+    -2.0918,
+    11.7023
+   ]
+  },
+  {
+   "name": "neck_02",
+   "parent": 7,
+   "offset": [
+    -0.0,
+    1.2184,
+    4.9629
+   ]
+  },
+  {
+   "name": "head",
+   "parent": 8,
+   "offset": [
+    -0.0,
+    1.0114,
+    4.8077
+   ]
+  },
+  {
+   "name": "clavicle_r",
+   "parent": 6,
+   "offset": [
+    -1.4279,
+    -2.2649,
+    5.1988
+   ]
+  },
+  {
+   "name": "upperarm_r",
+   "parent": 10,
+   "offset": [
+    -17.582,
+    -0.8174,
+    -2.718
+   ]
+  },
+  {
+   "name": "upperarm_twist_01_r",
+   "parent": 11,
+   "offset": [
+    -5.3324,
+    0.2167,
+    -7.5637
+   ]
+  },
+  {
+   "name": "lowerarm_r",
+   "parent": 11,
+   "offset": [
+    -15.9969,
+    0.6502,
+    -22.6912
+   ]
+  },
+  {
+   "name": "lowerarm_twist_02_r",
+   "parent": 13,
+   "offset": [
+    -4.2539,
+    5.8686,
+    -5.4751
+   ]
+  },
+  {
+   "name": "lowerarm_twist_01_r",
+   "parent": 13,
+   "offset": [
+    -8.5077,
+    11.7372,
+    -10.9502
+   ]
+  },
+  {
+   "name": "hand_r",
+   "parent": 13,
+   "offset": [
+    -12.7616,
+    17.6059,
+    -16.4254
+   ]
+  },
+  {
+   "name": "index_metacarpal_r",
+   "parent": 16,
+   "offset": [
+    -0.3708,
+    4.0013,
+    -1.2354
+   ]
+  },
+  {
+   "name": "index_01_r",
+   "parent": 17,
+   "offset": [
+    -2.3928,
+    4.0314,
+    -3.553
+   ]
+  },
+  {
+   "name": "index_02_r",
+   "parent": 18,
+   "offset": [
+    -0.4603,
+    2.2074,
+    -3.4002
+   ]
+  },
+  {
+   "name": "index_03_r",
+   "parent": 19,
+   "offset": [
+    0.1865,
+    0.9911,
+    -2.3911
+   ]
+  },
+  {
+   "name": "ring_metacarpal_r",
+   "parent": 16,
+   "offset": [
+    -2.5626,
+    1.4338,
+    -2.0614
+   ]
+  },
+  {
+   "name": "ring_01_r",
+   "parent": 21,
+   "offset": [
+    -3.3576,
+    2.6442,
+    -3.6893
+   ]
+  },
+  {
+   "name": "ring_02_r",
+   "parent": 22,
+   "offset": [
+    -0.7776,
+    1.9122,
+    -4.5288
+   ]
+  },
+  {
+   "name": "ring_03_r",
+   "parent": 23,
+   "offset": [
+    0.3151,
+    0.5589,
+    -2.1722
+   ]
+  },
+  {
+   "name": "thumb_01_r",
+   "parent": 16,
+   "offset": [
+    1.5416,
+    2.797,
+    -1.5084
+   ]
+  },
+  {
+   "name": "thumb_02_r",
+   "parent": 25,
+   "offset": [
+    1.0366,
+    3.7289,
+    -2.046
+   ]
+  },
+  {
+   "name": "thumb_03_r",
+   "parent": 26,
+   "offset": [
+    0.1412,
+    2.0008,
+    -2.3452
+   ]
+  },
+  {
+   "name": "pinky_metacarpal_r",
+   "parent": 16,
+   "offset": [
+    -3.1768,
+    0.3754,
+    -2.5624
+   ]
+  },
+  {
+   "name": "pinky_01_r",
+   "parent": 28,
+   "offset": [
+    -2.5947,
+    1.5538,
+    -3.9355
+   ]
+  },
+  {
+   "name": "pinky_02_r",
+   "parent": 29,
+   "offset": [
+    -1.0057,
+    1.1334,
+    -3.5023
+   ]
+  },
+  {
+   "name": "pinky_03_r",
+   "parent": 30,
+   "offset": [
+    0.1881,
+    0.4363,
+    -1.9839
+   ]
+  },
+  {
+   "name": "middle_metacarpal_r",
+   "parent": 16,
+   "offset": [
+    -1.9203,
+    2.431,
+    -1.5494
+   ]
+  },
+  {
+   "name": "middle_01_r",
+   "parent": 32,
+   "offset": [
+    -2.957,
+    3.846,
+    -3.6952
+   ]
+  },
+  {
+   "name": "middle_02_r",
+   "parent": 33,
+   "offset": [
+    -0.3216,
+    2.2978,
+    -4.619
+   ]
+  },
+  {
+   "name": "middle_03_r",
+   "parent": 34,
+   "offset": [
+    0.5797,
+    0.6063,
+    -2.3275
+   ]
+  },
+  {
+   "name": "upperarm_twist_02_r",
+   "parent": 11,
+   "offset": [
+    -10.6647,
+    0.4335,
+    -15.1273
+   ]
+  },
+  {
+   "name": "clavicle_l",
+   "parent": 6,
+   "offset": [
+    1.4279,
+    -2.2649,
+    5.1988
+   ]
+  },
+  {
+   "name": "upperarm_l",
+   "parent": 37,
+   "offset": [
+    17.582,
+    -0.8174,
+    -2.7176
+   ]
+  },
+  {
+   "name": "lowerarm_l",
+   "parent": 38,
+   "offset": [
+    15.9971,
+    0.6502,
+    -22.6915
+   ]
+  },
+  {
+   "name": "lowerarm_twist_02_l",
+   "parent": 39,
+   "offset": [
+    4.2539,
+    5.8686,
+    -5.4751
+   ]
+  },
+  {
+   "name": "lowerarm_twist_01_l",
+   "parent": 39,
+   "offset": [
+    8.5077,
+    11.7373,
+    -10.9503
+   ]
+  },
+  {
+   "name": "hand_l",
+   "parent": 39,
+   "offset": [
+    12.7616,
+    17.6059,
+    -16.4254
+   ]
+  },
+  {
+   "name": "middle_metacarpal_l",
+   "parent": 42,
+   "offset": [
+    1.92,
+    2.4309,
+    -1.5497
+   ]
+  },
+  {
+   "name": "middle_01_l",
+   "parent": 43,
+   "offset": [
+    2.957,
+    3.8459,
+    -3.695
+   ]
+  },
+  {
+   "name": "middle_02_l",
+   "parent": 44,
+   "offset": [
+    0.3216,
+    2.2979,
+    -4.619
+   ]
+  },
+  {
+   "name": "middle_03_l",
+   "parent": 45,
+   "offset": [
+    -0.5797,
+    0.6062,
+    -2.3275
+   ]
+  },
+  {
+   "name": "ring_metacarpal_l",
+   "parent": 42,
+   "offset": [
+    2.5623,
+    1.4338,
+    -2.0618
+   ]
+  },
+  {
+   "name": "ring_01_l",
+   "parent": 47,
+   "offset": [
+    3.3576,
+    2.6441,
+    -3.689
+   ]
+  },
+  {
+   "name": "ring_02_l",
+   "parent": 48,
+   "offset": [
+    0.7776,
+    1.9122,
+    -4.5287
+   ]
+  },
+  {
+   "name": "ring_03_l",
+   "parent": 49,
+   "offset": [
+    -0.3152,
+    0.5589,
+    -2.1722
+   ]
+  },
+  {
+   "name": "thumb_01_l",
+   "parent": 42,
+   "offset": [
+    -1.5419,
+    2.7969,
+    -1.5081
+   ]
+  },
+  {
+   "name": "thumb_02_l",
+   "parent": 51,
+   "offset": [
+    -1.0366,
+    3.7288,
+    -2.0465
+   ]
+  },
+  {
+   "name": "thumb_03_l",
+   "parent": 52,
+   "offset": [
+    -0.1412,
+    2.0009,
+    -2.3452
+   ]
+  },
+  {
+   "name": "index_metacarpal_l",
+   "parent": 42,
+   "offset": [
+    0.3705,
+    4.0012,
+    -1.2358
+   ]
+  },
+  {
+   "name": "index_01_l",
+   "parent": 54,
+   "offset": [
+    2.3928,
+    4.0314,
+    -3.5527
+   ]
+  },
+  {
+   "name": "index_02_l",
+   "parent": 55,
+   "offset": [
+    0.4603,
+    2.2074,
+    -3.4003
+   ]
+  },
+  {
+   "name": "index_03_l",
+   "parent": 56,
+   "offset": [
+    -0.1865,
+    0.991,
+    -2.391
+   ]
+  },
+  {
+   "name": "pinky_metacarpal_l",
+   "parent": 42,
+   "offset": [
+    3.1765,
+    0.3753,
+    -2.5622
+   ]
+  },
+  {
+   "name": "pinky_01_l",
+   "parent": 58,
+   "offset": [
+    2.5947,
+    1.5538,
+    -3.9358
+   ]
+  },
+  {
+   "name": "pinky_02_l",
+   "parent": 59,
+   "offset": [
+    1.0057,
+    1.1334,
+    -3.5023
+   ]
+  },
+  {
+   "name": "pinky_03_l",
+   "parent": 60,
+   "offset": [
+    -0.1881,
+    0.4363,
+    -1.9839
+   ]
+  },
+  {
+   "name": "upperarm_twist_02_l",
+   "parent": 38,
+   "offset": [
+    10.6647,
+    0.4335,
+    -15.1277
+   ]
+  },
+  {
+   "name": "upperarm_twist_01_l",
+   "parent": 38,
+   "offset": [
+    5.3324,
+    0.2167,
+    -7.5638
+   ]
+  },
+  {
+   "name": "thigh_l",
+   "parent": 1,
+   "offset": [
+    9.9692,
+    0.2597,
+    -2.354
+   ]
+  },
+  {
+   "name": "thigh_twist_01_l",
+   "parent": 64,
+   "offset": [
+    0.7877,
+    0.0184,
+    -14.4256
+   ]
+  },
+  {
+   "name": "thigh_twist_02_l",
+   "parent": 64,
+   "offset": [
+    1.5754,
+    0.0367,
+    -28.8512
+   ]
+  },
+  {
+   "name": "calf_l",
+   "parent": 64,
+   "offset": [
+    2.3631,
+    0.0551,
+    -43.2768
+   ]
+  },
+  {
+   "name": "calf_twist_01_l",
+   "parent": 67,
+   "offset": [
+    1.2447,
+    -2.4044,
+    -28.0149
+   ]
+  },
+  {
+   "name": "foot_l",
+   "parent": 67,
+   "offset": [
+    1.7553,
+    -3.59,
+    -42.0284
+   ]
+  },
+  {
+   "name": "ball_l",
+   "parent": 69,
+   "offset": [
+    1.6902,
+    14.9231,
+    -7.4868
+   ]
+  },
+  {
+   "name": "calf_twist_02_l",
+   "parent": 67,
+   "offset": [
+    0.5851,
+    -1.1967,
+    -14.0095
+   ]
+  },
+  {
+   "name": "thigh_r",
+   "parent": 1,
+   "offset": [
+    -9.9691,
+    0.2692,
+    -2.3534
+   ]
+  },
+  {
+   "name": "thigh_twist_01_r",
+   "parent": 72,
+   "offset": [
+    -0.7877,
+    0.0184,
+    -14.4256
+   ]
+  },
+  {
+   "name": "thigh_twist_02_r",
+   "parent": 72,
+   "offset": [
+    -1.5754,
+    0.0367,
+    -28.8512
+   ]
+  },
+  {
+   "name": "calf_r",
+   "parent": 72,
+   "offset": [
+    -2.3631,
+    0.0551,
+    -43.2768
+   ]
+  },
+  {
+   "name": "calf_twist_01_r",
+   "parent": 75,
+   "offset": [
+    -1.2448,
+    -2.4044,
+    -28.0149
+   ]
+  },
+  {
+   "name": "foot_r",
+   "parent": 75,
+   "offset": [
+    -1.7553,
+    -3.59,
+    -42.0284
+   ]
+  },
+  {
+   "name": "ball_r",
+   "parent": 77,
+   "offset": [
+    -1.6901,
+    14.9231,
+    -7.4868
+   ]
+  },
+  {
+   "name": "calf_twist_02_r",
+   "parent": 75,
+   "offset": [
+    -0.6224,
+    -1.2022,
+    -14.0074
+   ]
+  },
+  {
+   "name": "interaction",
+   "parent": 0,
+   "offset": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "ik_foot_root",
+   "parent": 0,
+   "offset": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "ik_foot_l",
+   "parent": 81,
+   "offset": [
+    14.0877,
+    -0.9943,
+    8.2376
+   ]
+  },
+  {
+   "name": "ik_foot_r",
+   "parent": 81,
+   "offset": [
+    -14.0876,
+    -0.9848,
+    8.2382
+   ]
+  },
+  {
+   "name": "center_of_mass",
+   "parent": 0,
+   "offset": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "ik_hand_root",
+   "parent": 0,
+   "offset": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "ik_hand_gun",
+   "parent": 85,
+   "offset": [
+    -47.7683,
+    15.6988,
+    104.4664
+   ]
+  },
+  {
+   "name": "ik_hand_l",
+   "parent": 86,
+   "offset": [
+    95.5369,
+    0.0001,
+    0.0001
+   ]
+  },
+  {
+   "name": "ik_hand_r",
+   "parent": 86,
+   "offset": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ ]
+}
