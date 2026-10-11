@@ -9,6 +9,7 @@ from typing import Any
 
 from . import SCHEMA_VERSION
 from .mathutil import Quat, Vec3
+from .result import Joint, Skeleton
 
 LOCOMOTION_STYLES = ("idle", "walk", "jog", "run", "crouch_walk")
 
@@ -32,6 +33,9 @@ class Character:
     profile: str | None = None
     height_cm: float | None = None
     max_speed_cm_s: float | None = None
+    # Skeleton to generate on, sent by the editor from the target USkeleton. Backends that
+    # can't generate on arbitrary skeletons ignore it and output their own (see the result).
+    skeleton: Skeleton | None = None
 
 
 @dataclass
@@ -107,6 +111,23 @@ def _quat(value: Any, where: str) -> Quat:
         raise RequestError(f"{where} must contain numbers") from exc
 
 
+def parse_skeleton(value: Any, where: str) -> Skeleton:
+    """Parse {"name", "joints": [{"name", "parent", "offset"}]} with parents before children."""
+    if not isinstance(value, dict):
+        raise RequestError(f"{where} must be an object")
+    raw_joints = value.get("joints")
+    if not isinstance(raw_joints, list) or not raw_joints:
+        raise RequestError(f"{where}.joints must be a non-empty list")
+    joints = []
+    for i, j in enumerate(raw_joints):
+        jw = f"{where}.joints[{i}]"
+        parent = _require(j, "parent", jw)
+        if not isinstance(parent, int) or parent >= i or parent < -1 or (parent == -1) != (i == 0):
+            raise RequestError(f"{jw}.parent must reference an earlier joint (only joint 0 is the root)")
+        joints.append(Joint(str(_require(j, "name", jw)), parent, _vec3(_require(j, "offset", jw), f"{jw}.offset")))
+    return Skeleton(name=str(value.get("name", "target")), joints=joints)
+
+
 def _require(obj: dict[str, Any], key: str, where: str) -> Any:
     if not isinstance(obj, dict) or key not in obj:
         raise RequestError(f"{where}.{key} is required")
@@ -127,6 +148,7 @@ def parse_request(data: dict[str, Any]) -> MotionRequest:
         profile=char.get("profile"),
         height_cm=char.get("height_cm"),
         max_speed_cm_s=char.get("max_speed_cm_s"),
+        skeleton=parse_skeleton(char["skeleton"], "character.skeleton") if "skeleton" in char else None,
     )
 
     start_raw = _require(data, "start", "request")

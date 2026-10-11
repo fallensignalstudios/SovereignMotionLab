@@ -53,7 +53,7 @@ namespace
 }
 
 UAnimSequence* USovereignMotionBakeLibrary::BakeResult(const FSovereignMotionResult& Result, USkeleton* Skeleton,
-	const FString& PackagePath, const FString& AssetName, FString& OutMessage)
+	const FString& PackagePath, const FString& AssetName, bool bRelativeToStart, FString& OutMessage)
 {
 	OutMessage.Reset();
 	if (!Skeleton)
@@ -132,6 +132,18 @@ UAnimSequence* USovereignMotionBakeLibrary::BakeResult(const FSovereignMotionRes
 	TArray<TArray<FQuat4f>> BoneRotations;
 	BoneRotations.SetNum(NumBones);
 	TArray<FVector3f> RootPositions;
+
+	// Optionally re-express root motion relative to the first frame: undo the start position and
+	// the start heading (yaw only), so the clip begins at the origin with the mesh facing its own forward.
+	FQuat StartYawInverse = FQuat::Identity;
+	FVector StartTranslation = FVector::ZeroVector;
+	if (bRelativeToStart)
+	{
+		const int32 RootJoint = 0;
+		const float StartYaw = Result.Frames[0].Rotations[RootJoint].Rotator().Yaw;
+		StartYawInverse = FQuat(FVector::UpVector, FMath::DegreesToRadians(-StartYaw));
+		StartTranslation = Result.Frames[0].RootTranslation;
+	}
 	TArray<FQuat> ResultComponent;
 	TArray<FQuat> TargetComponent;
 	ResultComponent.SetNum(Result.Joints.Num());
@@ -142,7 +154,7 @@ UAnimSequence* USovereignMotionBakeLibrary::BakeResult(const FSovereignMotionRes
 		{
 			const int32 Parent = Result.Joints[JointIndex].Parent;
 			ResultComponent[JointIndex] = Parent == INDEX_NONE
-				? Frame.Rotations[JointIndex]
+				? StartYawInverse * Frame.Rotations[JointIndex]
 				: ResultComponent[Parent] * Frame.Rotations[JointIndex];
 		}
 		for (int32 Bone = 0; Bone < NumBones; ++Bone)
@@ -160,7 +172,8 @@ UAnimSequence* USovereignMotionBakeLibrary::BakeResult(const FSovereignMotionRes
 			BoneRotations[Bone].Add(FQuat4f((ParentComponent.Inverse() * TargetComponent[Bone]).GetNormalized()));
 			if (Result.Joints[JointIndex].Parent == INDEX_NONE)
 			{
-				RootPositions.Add(FVector3f(Frame.RootTranslation + Result.Joints[JointIndex].Offset));
+				const FVector RootMotion = StartYawInverse.RotateVector(Frame.RootTranslation - StartTranslation);
+				RootPositions.Add(FVector3f(RootMotion + Result.Joints[JointIndex].Offset));
 			}
 		}
 	}
@@ -196,6 +209,7 @@ UAnimSequence* USovereignMotionBakeLibrary::BakeResult(const FSovereignMotionRes
 	Controller.NotifyPopulated();
 	Controller.CloseBracket();
 
+	Sequence->bEnableRootMotion = bRelativeToStart;
 	Sequence->PostEditChange();
 	Package->MarkPackageDirty();
 	FAssetRegistryModule::AssetCreated(Sequence);

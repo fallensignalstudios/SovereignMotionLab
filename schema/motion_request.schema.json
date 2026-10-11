@@ -4,20 +4,42 @@
   "title": "Sovereign Motion Request",
   "description": "Everything a backend needs to generate one motion clip. Unreal conventions throughout: Z-up, X-forward, centimeters, seconds, degrees. The request is saved next to every baked animation so a clip can be regenerated exactly.",
   "type": "object",
-  "required": ["schema_version", "request_id", "backend", "character", "start", "goal"],
+  "required": [
+    "schema_version",
+    "request_id",
+    "backend",
+    "character",
+    "start",
+    "goal"
+  ],
   "additionalProperties": false,
   "properties": {
-    "schema_version": { "const": "1.0" },
-    "request_id": { "type": "string", "minLength": 1 },
+    "schema_version": {
+      "const": "1.0"
+    },
+    "request_id": {
+      "type": "string",
+      "minLength": 1
+    },
     "backend": {
       "type": "string",
       "description": "Registered backend name, e.g. \"mock\" or \"motionbricks\"."
     },
-    "seed": { "type": "integer", "default": 0 },
-    "fps": { "type": "integer", "minimum": 1, "maximum": 240, "default": 30 },
+    "seed": {
+      "type": "integer",
+      "default": 0
+    },
+    "fps": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 240,
+      "default": 30
+    },
     "character": {
       "type": "object",
-      "required": ["skeleton_id"],
+      "required": [
+        "skeleton_id"
+      ],
       "additionalProperties": false,
       "properties": {
         "skeleton_id": {
@@ -28,14 +50,61 @@
           "type": "string",
           "description": "Name of a character profile in sidecar/profiles/. Profiles translate semantic traits (armor weight, injury) into numeric limits."
         },
-        "height_cm": { "type": "number", "exclusiveMinimum": 0 },
-        "max_speed_cm_s": { "type": "number", "exclusiveMinimum": 0 }
+        "height_cm": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "max_speed_cm_s": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "skeleton": {
+          "description": "Optional skeleton to generate on, sent by the editor from the target USkeleton's reference pose. Same shape and convention as the result's skeleton (offsets are component-space deltas of the reference pose, i.e. an identity-rotation bind pose; joint 0 is the root; parents before children). Backends that can't generate on arbitrary skeletons ignore it and say so in the result notes.",
+          "type": "object",
+          "required": [
+            "name",
+            "joints"
+          ],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "joints": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "parent",
+                  "offset"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "parent": {
+                    "type": "integer",
+                    "minimum": -1
+                  },
+                  "offset": {
+                    "$ref": "#/$defs/vec3"
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
-    "start": { "$ref": "#/$defs/root_state" },
+    "start": {
+      "$ref": "#/$defs/root_state"
+    },
     "goal": {
       "allOf": [
-        { "$ref": "#/$defs/root_state" },
+        {
+          "$ref": "#/$defs/root_state"
+        },
         {
           "properties": {
             "arrive_by_s": {
@@ -54,7 +123,9 @@
         "waypoints": {
           "type": "array",
           "description": "Intermediate root positions between start and goal, in order.",
-          "items": { "$ref": "#/$defs/vec3" }
+          "items": {
+            "$ref": "#/$defs/vec3"
+          }
         }
       }
     },
@@ -64,10 +135,19 @@
       "properties": {
         "style": {
           "type": "string",
-          "enum": ["idle", "walk", "jog", "run", "crouch_walk"],
+          "enum": [
+            "idle",
+            "walk",
+            "jog",
+            "run",
+            "crouch_walk"
+          ],
           "default": "walk"
         },
-        "speed_cm_s": { "type": "number", "exclusiveMinimum": 0 }
+        "speed_cm_s": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
       }
     },
     "joint_targets": {
@@ -75,13 +155,25 @@
       "description": "Sparse pose constraints: pin a hand on a terminal, plant a foot, etc.",
       "items": {
         "type": "object",
-        "required": ["joint", "time_s"],
+        "required": [
+          "joint",
+          "time_s"
+        ],
         "additionalProperties": false,
         "properties": {
-          "joint": { "type": "string" },
-          "time_s": { "type": "number", "minimum": 0 },
-          "location": { "$ref": "#/$defs/vec3" },
-          "rotation": { "$ref": "#/$defs/quat" },
+          "joint": {
+            "type": "string"
+          },
+          "time_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "location": {
+            "$ref": "#/$defs/vec3"
+          },
+          "rotation": {
+            "$ref": "#/$defs/quat"
+          },
           "hard": {
             "type": "boolean",
             "default": false,
@@ -90,7 +182,9 @@
         }
       }
     },
-    "text_prompt": { "type": "string" },
+    "text_prompt": {
+      "type": "string"
+    },
     "gameplay_context": {
       "type": "object",
       "description": "Free-form tags recorded for traceability (e.g. GameplayTags, StateTree state). Backends ignore this unless the adapter explicitly maps a key."
@@ -99,23 +193,34 @@
   "$defs": {
     "vec3": {
       "type": "array",
-      "items": { "type": "number" },
+      "items": {
+        "type": "number"
+      },
       "minItems": 3,
       "maxItems": 3
     },
     "quat": {
       "type": "array",
       "description": "Quaternion as [x, y, z, w].",
-      "items": { "type": "number" },
+      "items": {
+        "type": "number"
+      },
       "minItems": 4,
       "maxItems": 4
     },
     "root_state": {
       "type": "object",
-      "required": ["root_location"],
+      "required": [
+        "root_location"
+      ],
       "properties": {
-        "root_location": { "$ref": "#/$defs/vec3" },
-        "root_yaw_deg": { "type": "number", "default": 0 }
+        "root_location": {
+          "$ref": "#/$defs/vec3"
+        },
+        "root_yaw_deg": {
+          "type": "number",
+          "default": 0
+        }
       }
     }
   }

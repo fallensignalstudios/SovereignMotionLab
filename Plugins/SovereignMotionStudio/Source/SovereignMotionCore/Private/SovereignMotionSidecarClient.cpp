@@ -1,5 +1,6 @@
 #include "SovereignMotionSidecarClient.h"
 
+#include "Animation/Skeleton.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
@@ -8,6 +9,7 @@
 #include "Serialization/JsonSerializer.h"
 #include "SovereignMotionJson.h"
 #include "SovereignMotionSettings.h"
+#include "SovereignMotionSkeleton.h"
 
 namespace
 {
@@ -42,6 +44,17 @@ FSovereignMotionSidecarClient::FSovereignMotionSidecarClient(const FString& InBa
 {
 }
 
+FString FSovereignMotionSidecarClient::BuildRequestJson(const FSovereignMotionRequest& Request)
+{
+	if (const USkeleton* Skeleton = Request.TargetSkeleton.LoadSynchronous())
+	{
+		TArray<FSovereignMotionJoint> Joints;
+		SovereignMotionSkeleton::Describe(*Skeleton, Joints);
+		return SovereignMotionJson::RequestToJson(Request, Skeleton->GetFName(), &Joints);
+	}
+	return SovereignMotionJson::RequestToJson(Request);
+}
+
 void FSovereignMotionSidecarClient::CheckHealth(FHealthCallback OnComplete) const
 {
 	const TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
@@ -70,7 +83,7 @@ void FSovereignMotionSidecarClient::Generate(const FSovereignMotionRequest& Requ
 	HttpRequest->SetVerb(TEXT("POST"));
 	HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 	HttpRequest->SetTimeout(TimeoutSeconds);
-	HttpRequest->SetContentAsString(SovereignMotionJson::RequestToJson(Request));
+	HttpRequest->SetContentAsString(BuildRequestJson(Request));
 	HttpRequest->OnProcessRequestComplete().BindLambda(
 		[OnComplete](FHttpRequestPtr, FHttpResponsePtr Response, bool bConnected)
 		{

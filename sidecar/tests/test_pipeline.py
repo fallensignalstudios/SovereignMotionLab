@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import dataclasses
 import json
 import math
 import threading
@@ -22,6 +23,8 @@ from sovereign_motion.result import Frame, Joint, MotionResult, Skeleton
 from sovereign_motion.server import make_server
 
 EXAMPLE = Path(__file__).resolve().parents[2] / "examples" / "requests" / "dominion_soldier_walk.json"
+# UE4 SK_Mannequin reference pose in the result convention, extracted from a Motus FBX.
+MANNEQUIN = Path(__file__).resolve().parent / "fixtures" / "ue4_mannequin_skeleton.json"
 
 
 def example() -> dict:
@@ -98,6 +101,86 @@ class MockBackendTests(unittest.TestCase):
         result = run_json(example())
         again = MotionResult.from_dict(json.loads(json.dumps(result.to_dict())))
         self.assertEqual(again.to_dict(), result.to_dict())
+
+
+def mannequin_request() -> dict:
+    data = example()
+    with open(MANNEQUIN, encoding="utf-8") as f:
+        data["character"]["skeleton"] = json.load(f)
+    return data
+
+
+class TargetSkeletonTests(unittest.TestCase):
+    def setUp(self):
+        self.result = run_json(mannequin_request())
+        self.idx = self.result.skeleton.index
+
+    def _facing_deg(self, frame: int) -> float:
+        p = world_positions(self.result, frame)
+        dx = sum(p[self.idx(f"ball_{s}")][0] - p[self.idx(f"foot_{s}")][0] for s in "lr")
+        dy = sum(p[self.idx(f"ball_{s}")][1] - p[self.idx(f"foot_{s}")][1] for s in "lr")
+        return math.degrees(math.atan2(dy, dx))
+
+    def test_generates_on_requested_skeleton(self):
+        self.assertEqual(self.result.skeleton.name, "SK_Mannequin")
+        self.assertEqual(len(self.result.frames[0].rotations), 68)
+
+    def test_mesh_facing_is_corrected(self):
+        # The mannequin mesh faces +Y; the clip must still face start/goal yaw in world space.
+        self.assertAlmostEqual(self._facing_deg(0), 0.0, delta=1.0)
+        self.assertAlmostEqual(self._facing_deg(len(self.result.frames) - 1), 90.0, delta=1.0)
+
+    def test_feet_grounded_and_arms_hanging(self):
+        p = world_positions(self.result, 0)
+        for side in "lr":
+            self.assertLess(p[self.idx(f"ball_{side}")][2], 10.0)
+            upper, hand = p[self.idx(f"upperarm_{side}")], p[self.idx(f"hand_{side}")]
+            self.assertLess(hand[2], upper[2] - 45.0)
+
+    def test_left_foot_is_on_the_left(self):
+        # Facing +X in Unreal, left is -Y.
+        p = world_positions(self.result, 0)
+        self.assertLess(p[self.idx("foot_l")][1], 0.0)
+        self.assertGreater(p[self.idx("foot_r")][1], 0.0)
+
+    def test_rejects_skeleton_without_legs(self):
+        data = example()
+        data["character"]["skeleton"] = {"name": "blob", "joints": [{"name": "root", "parent": -1, "offset": [0, 0, 0]}]}
+        with self.assertRaises(RequestError):
+            run_json(data)
+
+    def test_rejects_children_before_parents(self):
+        data = example()
+        data["character"]["skeleton"] = {"name": "bad", "joints": [
+            {"name": "root", "parent": -1, "offset": [0, 0, 0]},
+            {"name": "a", "parent": 2, "offset": [0, 0, 1]},
+            {"name": "b", "parent": 0, "offset": [0, 0, 1]},
+        ]}
+        with self.assertRaises(RequestError):
+            parse_request(data)
+
+    def test_unsupported_backend_says_it_needs_retargeting(self):
+        from sovereign_motion.backends.base import MotionBackend
+        from sovereign_motion.pipeline import run
+
+        captured = []
+
+        class Fake(MotionBackend):
+            name = "fake"
+
+            def generate(self, request):
+                captured.append(request)
+                return get_backend("mock").generate(dataclasses.replace(
+                    request, character=dataclasses.replace(request.character, skeleton=None)))
+
+        import sovereign_motion.pipeline as pipeline
+        original = pipeline.get_backend
+        pipeline.get_backend = lambda name: Fake()
+        try:
+            result = run(parse_request(mannequin_request()))
+        finally:
+            pipeline.get_backend = original
+        self.assertTrue(any("needs retargeting" in n for n in result.diagnostics["notes"]))
 
 
 class MotionBricksAdapterTests(unittest.TestCase):

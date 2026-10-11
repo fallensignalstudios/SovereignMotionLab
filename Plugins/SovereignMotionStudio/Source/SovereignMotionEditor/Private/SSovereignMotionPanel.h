@@ -23,6 +23,7 @@ public:
 
 private:
 	FReply OnCheckSidecar();
+	FReply OnUseLevelSelection();
 	FReply OnGenerate();
 	FReply OnBake();
 	bool CanBake() const { return bHasResult && !bBusy; }

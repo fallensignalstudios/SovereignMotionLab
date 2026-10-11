@@ -7,8 +7,9 @@ the animation. The result is baked into a normal Animation Sequence.
 NVIDIA MotionBricks is the first model backend, but nothing outside its adapter depends on it.
 The workflow, request format and Unreal tools are the durable part. Models are swappable.
 
-> Status: **scaffold**. The Python sidecar runs end to end with a procedural mock backend and is
-> tested. The UE5 plugin is written against UE 5.4+ APIs but **has not been compiled yet**.
+> Status: **early prototype**. The sidecar runs end to end with a procedural mock backend and is
+> tested. The UE5 plugin builds and loads. The editor round trip (pick points in the level,
+> generate on your own skeleton, bake, open) is written but not yet verified in-engine.
 > The MotionBricks adapter translates requests but doesn't call the model yet; see
 > [docs/spike-0.0.md](docs/spike-0.0.md).
 
@@ -77,13 +78,25 @@ backends against.
 ## Quick start: Unreal plugin
 
 1. Copy or symlink `Plugins/SovereignMotionStudio` into a UE 5.4+ project's `Plugins/` folder
-   and build the project. (It hasn't been compiled yet, so expect some API fixes on the first build.)
+   and build the project.
 2. Start the sidecar: `python3 -m sovereign_motion serve`.
-3. Open **Tools > Sovereign Motion Studio**. Click **Check Sidecar**, edit the request, then **Generate**.
-   Requests and results are saved in `Saved/SovereignMotion/`.
-4. To bake, set **Source Skeleton** to a skeleton whose bone names match the backend's output
-   skeleton (for the mock, import `out/walk.bvh` via Blender as FBX once). Then click
-   **Bake to Animation Sequence**, and retarget the sequence onto game characters with an IK Retargeter.
+3. Open **Tools > Sovereign Motion Studio** and click **Check Sidecar**.
+4. Set **Target Skeleton** (e.g. `SK_Mannequin`, the UE4 one, or UE5 Manny's `SK_Mannequin`).
+   Its reference pose is sent with the request, and the mock animates it directly. Limbs are found by
+   standard Mannequin bone names (`pelvis`, `thigh_l`, `calf_l`, `foot_l`, `ball_l`, `upperarm_l`,
+   `lowerarm_l`, ...), and the mesh's facing comes from its feet.
+5. Place two or more actors in the level (Target Points work well) and select them in order: start,
+   then any waypoints, then goal. Click **Use Level Selection**. Points are dropped onto the floor,
+   and start and goal yaw come from the actors' rotations.
+6. Click **Generate**, then **Bake to Animation Sequence**. With Source Skeleton left empty it bakes
+   onto the target skeleton, makes root motion relative to the start, and opens the clip.
+   Requests and results are saved in `Saved/SovereignMotion/` so any clip can be regenerated.
+
+For backends that output their own skeleton (MotionBricks, once wired up), the result notes say
+so. Bake onto a skeleton matching theirs, then retarget with an IK Retargeter.
+
+Known gaps in the mock: IK helper bones (`ik_foot_*`, `ik_hand_*`) stay in their reference pose,
+and fingers, twist bones and spine don't move.
 
 The sidecar URL is set in Project Settings > Plugins > Sovereign Motion Studio.
 `USovereignMotionBakeLibrary` exposes baking and result loading to Editor Utility Blueprints.
@@ -92,6 +105,7 @@ The sidecar URL is set in Project Settings > Plugins > Sovereign Motion Studio.
 
 | Stage | Goal |
 | --- | --- |
+| 0.0-editor (done) | Plugin round trip on our own skeleton with the mock: level points, generate, bake, open. |
 | **0.0 spike** | Run MotionBricks for real, export, retarget by hand onto a Sovereign Call soldier, and judge quality. Go/no-go for the model. [Checklist](docs/spike-0.0.md). |
 | 0.1 | The designer's milestone: generate a walk to an editor-picked destination, preview it, bake it, with foot locking and no significant sliding. |
 | 0.2 | Viewport gizmos for trajectory and joint targets, plus regenerating part of a clip. |

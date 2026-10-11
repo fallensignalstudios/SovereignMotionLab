@@ -14,6 +14,8 @@ class BackendUnavailable(RuntimeError):
 
 class MotionBackend(ABC):
     name: str = ""
+    # True if the backend can generate directly on request.character.skeleton.
+    supports_target_skeleton: bool = False
 
     def available(self) -> tuple[bool, str]:
         """Whether this backend can run right now, and why not if it can't."""

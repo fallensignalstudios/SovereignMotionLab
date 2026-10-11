@@ -55,7 +55,8 @@ namespace
 	}
 }
 
-FString SovereignMotionJson::RequestToJson(const FSovereignMotionRequest& Request)
+FString SovereignMotionJson::RequestToJson(const FSovereignMotionRequest& Request,
+	FName TargetSkeletonName, const TArray<FSovereignMotionJoint>* TargetJoints)
 {
 	TSharedRef<FJsonObject> Root = MakeShared<FJsonObject>();
 	Root->SetStringField(TEXT("schema_version"), SchemaVersion);
@@ -69,6 +70,22 @@ FString SovereignMotionJson::RequestToJson(const FSovereignMotionRequest& Reques
 	if (!Request.Profile.IsEmpty())
 	{
 		Character->SetStringField(TEXT("profile"), Request.Profile);
+	}
+	if (TargetJoints && TargetJoints->Num() > 0)
+	{
+		TArray<TSharedPtr<FJsonValue>> Joints;
+		for (const FSovereignMotionJoint& Joint : *TargetJoints)
+		{
+			TSharedRef<FJsonObject> Obj = MakeShared<FJsonObject>();
+			Obj->SetStringField(TEXT("name"), Joint.Name.ToString());
+			Obj->SetNumberField(TEXT("parent"), Joint.Parent);
+			Obj->SetArrayField(TEXT("offset"), VecToJson(Joint.Offset));
+			Joints.Add(MakeShared<FJsonValueObject>(Obj));
+		}
+		TSharedRef<FJsonObject> Skeleton = MakeShared<FJsonObject>();
+		Skeleton->SetStringField(TEXT("name"), TargetSkeletonName.ToString());
+		Skeleton->SetArrayField(TEXT("joints"), Joints);
+		Character->SetObjectField(TEXT("skeleton"), Skeleton);
 	}
 	Root->SetObjectField(TEXT("character"), Character);
 

@@ -12,7 +12,13 @@ from .result import MotionResult
 
 def run(request: MotionRequest) -> MotionResult:
     request, notes = apply_profile(request)
-    result = get_backend(request.backend).generate(request)
+    backend = get_backend(request.backend)
+    if request.character.skeleton is not None and not backend.supports_target_skeleton:
+        notes.append(
+            f"{backend.name} can't generate on {request.character.skeleton.name!r}; "
+            "output is on the backend's own skeleton and needs retargeting"
+        )
+    result = backend.generate(request)
     result.diagnostics.setdefault("notes", [])
     result.diagnostics["notes"] = notes + result.diagnostics["notes"]
     return result

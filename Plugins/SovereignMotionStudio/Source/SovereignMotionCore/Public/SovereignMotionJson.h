@@ -10,7 +10,9 @@ namespace SovereignMotionJson
 {
 	inline constexpr const TCHAR* SchemaVersion = TEXT("1.0");
 
-	SOVEREIGNMOTIONCORE_API FString RequestToJson(const FSovereignMotionRequest& Request);
+	/** TargetJoints, if given, is sent as character.skeleton (see SovereignMotionSkeleton::Describe). */
+	SOVEREIGNMOTIONCORE_API FString RequestToJson(const FSovereignMotionRequest& Request,
+		FName TargetSkeletonName = NAME_None, const TArray<FSovereignMotionJoint>* TargetJoints = nullptr);
 
 	/** Returns false and fills OutError if the JSON is not a valid 1.0 result. */
 	SOVEREIGNMOTIONCORE_API bool ResultFromJson(const FString& Json, FSovereignMotionResult& OutResult, FString& OutError);

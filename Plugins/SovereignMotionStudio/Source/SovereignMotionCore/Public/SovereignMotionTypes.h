@@ -6,6 +6,8 @@
 #include "CoreMinimal.h"
 #include "SovereignMotionTypes.generated.h"
 
+class USkeleton;
+
 USTRUCT(BlueprintType)
 struct SOVEREIGNMOTIONCORE_API FSovereignJointTarget
 {
@@ -54,6 +56,13 @@ struct SOVEREIGNMOTIONCORE_API FSovereignMotionRequest
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
 	FName SkeletonId = TEXT("SK_DominionSoldier");
+
+	/**
+	 * Skeleton to generate on. Its reference pose is sent with the request; backends that support
+	 * it (the mock today) animate it directly, so the result bakes onto it with no retargeting.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
+	TSoftObjectPtr<USkeleton> TargetSkeleton;
 
 	/** Character profile in sidecar/profiles/ (e.g. "dominion_heavy"). Empty for none. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")

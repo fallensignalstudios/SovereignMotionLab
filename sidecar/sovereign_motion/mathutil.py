@@ -53,3 +53,34 @@ def lerp_angle_rad(a: float, b: float, t: float) -> float:
     """Interpolate between two angles along the shortest arc."""
     delta = (b - a + math.pi) % (2.0 * math.pi) - math.pi
     return a + delta * t
+
+
+def quat_conjugate(q: Quat) -> Quat:
+    return (-q[0], -q[1], -q[2], q[3])
+
+
+def normalize(v: Vec3) -> Vec3:
+    length = math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])
+    if length == 0.0:
+        return (0.0, 0.0, 0.0)
+    return (v[0] / length, v[1] / length, v[2] / length)
+
+
+def cross(a: Vec3, b: Vec3) -> Vec3:
+    return (a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0])
+
+
+def quat_from_to(a: Vec3, b: Vec3) -> Quat:
+    """Shortest-arc rotation taking direction a onto direction b."""
+    a, b = normalize(a), normalize(b)
+    d = a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+    if d < -0.999999:
+        # Opposite directions: rotate 180 degrees about any perpendicular axis.
+        axis = cross((1.0, 0.0, 0.0), a)
+        if sum(c * c for c in axis) < 1e-12:
+            axis = cross((0.0, 1.0, 0.0), a)
+        return quat_from_axis_angle(axis, math.pi)
+    c = cross(a, b)
+    q = (c[0], c[1], c[2], 1.0 + d)
+    n = math.sqrt(sum(x * x for x in q))
+    return (q[0] / n, q[1] / n, q[2] / n, q[3] / n)

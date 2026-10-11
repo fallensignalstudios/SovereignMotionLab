@@ -18,6 +18,9 @@ public:
 	FSovereignMotionSidecarClient();
 	FSovereignMotionSidecarClient(const FString& InBaseUrl, float InTimeoutSeconds);
 
+	/** The exact JSON Generate() sends, including the target skeleton's reference pose if one is set. */
+	static FString BuildRequestJson(const FSovereignMotionRequest& Request);
+
 	void CheckHealth(FHealthCallback OnComplete) const;
 	void Generate(const FSovereignMotionRequest& Request, FGenerateCallback OnComplete) const;
 
