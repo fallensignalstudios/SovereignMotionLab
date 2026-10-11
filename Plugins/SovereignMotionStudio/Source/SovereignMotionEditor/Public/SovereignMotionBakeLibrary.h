@@ -9,6 +9,24 @@ class UAnimSequence;
 class USkeletalMesh;
 class USkeleton;
 
+namespace SovereignMotionBake
+{
+	/**
+	 * Unreal Mannequin convention (UE4 and UE5): IK bones mirror the feet and hands, and
+	 * ik_hand_gun follows the right hand.
+	 */
+	inline TMap<FName, FName> DefaultIKBoneSources()
+	{
+		return {
+			{ TEXT("ik_foot_l"), TEXT("foot_l") },
+			{ TEXT("ik_foot_r"), TEXT("foot_r") },
+			{ TEXT("ik_hand_gun"), TEXT("hand_r") },
+			{ TEXT("ik_hand_r"), TEXT("hand_r") },
+			{ TEXT("ik_hand_l"), TEXT("hand_l") },
+		};
+	}
+}
+
 USTRUCT(BlueprintType)
 struct SOVEREIGNMOTIONEDITOR_API FSovereignBakeSettings
 {
@@ -40,6 +58,13 @@ struct SOVEREIGNMOTIONEDITOR_API FSovereignBakeSettings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bake")
 	bool bOpenAfterBake = true;
 
+	/**
+	 * IK helper bones to drive, mapped to the bone each one follows. Every frame the IK bone is placed
+	 * exactly on its source in component space. Pairs the skeleton doesn't have are skipped.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bake")
+	TMap<FName, FName> IKBoneSources = SovereignMotionBake::DefaultIKBoneSources();
+
 	/** Mesh used for the in-level preview. Leave empty to use the skeleton's preview mesh. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Preview")
 	TSoftObjectPtr<USkeletalMesh> PreviewMesh;
@@ -58,13 +83,19 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign Motion")
 	static UAnimSequence* BakeResult(const FSovereignMotionResult& Result, USkeleton* Skeleton,
-		const FString& PackagePath, const FString& AssetName, bool bRelativeToStart, FString& OutMessage);
+		const FString& PackagePath, const FString& AssetName, bool bRelativeToStart,
+		const TMap<FName, FName>& IKBoneSources, FString& OutMessage);
+
+	/** IK bone -> source bone pairs for the Unreal Mannequin (UE4 and UE5). */
+	UFUNCTION(BlueprintPure, Category = "Sovereign Motion")
+	static TMap<FName, FName> DefaultIKBoneSources();
 
 	/**
 	 * Build an unsaved Animation Sequence for previewing a result in the level. Root motion stays in
 	 * level space, so play it on a mesh placed at the world origin.
 	 */
-	static UAnimSequence* BuildPreviewSequence(const FSovereignMotionResult& Result, USkeleton* Skeleton, FString& OutError);
+	static UAnimSequence* BuildPreviewSequence(const FSovereignMotionResult& Result, USkeleton* Skeleton,
+		const TMap<FName, FName>& IKBoneSources, FString& OutError);
 
 	/** Load a result previously saved by the studio panel or the sidecar CLI (.json). */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign Motion")

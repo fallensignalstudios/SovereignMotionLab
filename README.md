@@ -101,8 +101,14 @@ backends against.
 For backends that output their own skeleton (MotionBricks, once wired up), the result notes say
 so. Bake onto a skeleton matching theirs, then retarget with an IK Retargeter.
 
-Known gaps in the mock: IK helper bones (`ik_foot_*`, `ik_hand_*`) stay in their reference pose,
-and fingers, twist bones and spine don't move. It walks with soft knees and lowers the **root** bone
+IK helper bones are driven at bake and preview time. Each frame, every bone in **IK Bone Sources**
+(Bake settings) is placed exactly on its source bone in component space. The defaults follow the
+Mannequin convention, where `ik_foot_l/r` follow `foot_l/r`, `ik_hand_gun` and `ik_hand_r` follow
+`hand_r`, and `ik_hand_l` follows `hand_l`. That matches UE4 and UE5 reference poses, where each IK
+bone coincides with its source. Edit the map for custom rigs. Pairs a skeleton doesn't have are
+skipped. `center_of_mass` and `interaction` are not driven.
+
+Known gaps in the mock: fingers, twist bones and spine don't move. It walks with soft knees and lowers the **root** bone
 a few cm to keep the feet on the floor, because results only carry root translation. Real backends
 supply their own hip motion.
 

@@ -93,9 +93,25 @@ namespace
 		return true;
 	}
 
+	/** Resolve IK bone -> source bone names to indices, skipping pairs the skeleton doesn't have. */
+	TArray<TPair<int32, int32>> ResolveIKBones(const FReferenceSkeleton& RefSkeleton, const TMap<FName, FName>& IKBoneSources)
+	{
+		TArray<TPair<int32, int32>> Pairs;
+		for (const TPair<FName, FName>& Entry : IKBoneSources)
+		{
+			const int32 IKBone = RefSkeleton.FindBoneIndex(Entry.Key);
+			const int32 Source = RefSkeleton.FindBoneIndex(Entry.Value);
+			if (IKBone != INDEX_NONE && Source != INDEX_NONE && IKBone != Source)
+			{
+				Pairs.Emplace(IKBone, Source);
+			}
+		}
+		return Pairs;
+	}
+
 	/** Write the clip's keys into an empty sequence that already has its skeleton set. */
 	void WriteKeys(UAnimSequence& Sequence, const FSovereignMotionResult& Result, const TArray<int32>& BoneToJoint,
-		bool bRelativeToStart, bool bTransact)
+		const TMap<FName, FName>& IKBoneSources, bool bRelativeToStart, bool bTransact)
 	{
 		const FReferenceSkeleton& RefSkeleton = Sequence.GetSkeleton()->GetReferenceSkeleton();
 		const int32 NumBones = RefSkeleton.GetNum();
@@ -110,21 +126,29 @@ namespace
 			RefComponent[Bone] = Parent == INDEX_NONE ? RefPose[Bone].GetRotation() : RefComponent[Parent] * RefPose[Bone].GetRotation();
 		}
 
+		// IK helper bones (ik_foot_l, ik_hand_gun, ...) are snapped onto their source bones each frame.
+		const TArray<TPair<int32, int32>> IKBones = ResolveIKBones(RefSkeleton, IKBoneSources);
+		TArray<int32> IKSource;
+		IKSource.Init(INDEX_NONE, NumBones);
+		for (const TPair<int32, int32>& Pair : IKBones)
+		{
+			IKSource[Pair.Key] = Pair.Value;
+		}
+
+		// Bones that get tracks: everything the result drives, plus the IK bones.
+		TArray<bool> bKeyed;
+		bKeyed.Init(false, NumBones);
+		for (int32 Bone = 0; Bone < NumBones; ++Bone)
+		{
+			bKeyed[Bone] = BoneToJoint[Bone] != INDEX_NONE || IKSource[Bone] != INDEX_NONE;
+		}
+
 		const int32 NumKeys = Result.Frames.Num();
 		IAnimationDataController& Controller = Sequence.GetController();
 		Controller.OpenBracket(LOCTEXT("BakeBracket", "Bake Sovereign Motion"), bTransact);
 		Controller.InitializeModel();
 		Controller.SetFrameRate(FFrameRate(Result.Fps, 1), bTransact);
 		Controller.SetNumberOfFrames(FFrameNumber(NumKeys - 1), bTransact);
-
-		// Result rotations are relative to a bind pose with identity rotations. Transfer them in
-		// component space so the target's own bind orientations (bone rolls from DCC tools) and
-		// proportions are respected:
-		//   TargetComponent = ResultComponent * TargetRefComponent
-		//   TargetLocal     = inverse(TargetParentComponent) * TargetComponent
-		TArray<TArray<FQuat4f>> BoneRotations;
-		BoneRotations.SetNum(NumBones);
-		TArray<FVector3f> RootPositions;
 
 		// Optionally re-express root motion relative to the first frame: undo the start position and
 		// the start heading (yaw only), so the clip begins at the origin with the mesh facing its own forward.
@@ -137,10 +161,20 @@ namespace
 			StartYawInverse = FQuat(FVector::UpVector, FMath::DegreesToRadians(-StartYaw));
 			StartTranslation = Result.Frames[0].RootTranslation;
 		}
+
+		TArray<TArray<FVector3f>> TrackPositions;
+		TArray<TArray<FQuat4f>> TrackRotations;
+		TrackPositions.SetNum(NumBones);
+		TrackRotations.SetNum(NumBones);
 		TArray<FQuat> ResultComponent;
-		TArray<FQuat> TargetComponent;
+		TArray<FQuat> TargetComponentRotation;
+		TArray<FTransform> Local;
+		TArray<FTransform> Component;
 		ResultComponent.SetNum(Result.Joints.Num());
-		TargetComponent.SetNum(NumBones);
+		TargetComponentRotation.SetNum(NumBones);
+		Local.SetNum(NumBones);
+		Component.SetNum(NumBones);
+
 		for (const FSovereignMotionFrame& Frame : Result.Frames)
 		{
 			for (int32 JointIndex = 0; JointIndex < Result.Joints.Num(); ++JointIndex)
@@ -150,50 +184,77 @@ namespace
 					? StartYawInverse * Frame.Rotations[JointIndex]
 					: ResultComponent[Parent] * Frame.Rotations[JointIndex];
 			}
+
+			// Pass 1: the local pose. Result rotations are relative to a bind pose with identity
+			// rotations, so transfer them in component space to respect the target's own bind
+			// orientations (bone rolls from DCC tools):
+			//   TargetComponent = ResultComponent * TargetRefComponent
+			//   TargetLocal     = inverse(TargetParentComponent) * TargetComponent
+			// Only the result's root moves; other bones keep the target's bind offsets (its proportions).
 			for (int32 Bone = 0; Bone < NumBones; ++Bone)
 			{
 				const int32 Parent = RefSkeleton.GetParentIndex(Bone);
-				const FQuat ParentComponent = Parent == INDEX_NONE ? FQuat::Identity : TargetComponent[Parent];
+				const FQuat ParentRotation = Parent == INDEX_NONE ? FQuat::Identity : TargetComponentRotation[Parent];
 				const int32 JointIndex = BoneToJoint[Bone];
+				Local[Bone] = RefPose[Bone];
 				if (JointIndex == INDEX_NONE)
 				{
-					// Bones the backend doesn't drive follow their parent in reference pose.
-					TargetComponent[Bone] = ParentComponent * RefPose[Bone].GetRotation();
-					continue;
+					TargetComponentRotation[Bone] = ParentRotation * RefPose[Bone].GetRotation();
 				}
-				TargetComponent[Bone] = ResultComponent[JointIndex] * RefComponent[Bone];
-				BoneRotations[Bone].Add(FQuat4f((ParentComponent.Inverse() * TargetComponent[Bone]).GetNormalized()));
-				if (Result.Joints[JointIndex].Parent == INDEX_NONE)
+				else
 				{
-					const FVector RootMotion = StartYawInverse.RotateVector(Frame.RootTranslation - StartTranslation);
-					RootPositions.Add(FVector3f(RootMotion + Result.Joints[JointIndex].Offset));
+					TargetComponentRotation[Bone] = ResultComponent[JointIndex] * RefComponent[Bone];
+					Local[Bone].SetRotation((ParentRotation.Inverse() * TargetComponentRotation[Bone]).GetNormalized());
+					if (Result.Joints[JointIndex].Parent == INDEX_NONE)
+					{
+						const FVector RootMotion = StartYawInverse.RotateVector(Frame.RootTranslation - StartTranslation);
+						Local[Bone].SetTranslation(RootMotion + Result.Joints[JointIndex].Offset);
+					}
+				}
+				Component[Bone] = Parent == INDEX_NONE ? Local[Bone] : Local[Bone] * Component[Parent];
+			}
+
+			// Pass 2: snap IK bones onto their sources in component space, then re-derive their locals
+			// (and the component transforms of anything parented under them, e.g. ik_hand_l under ik_hand_gun).
+			if (IKBones.Num() > 0)
+			{
+				const TArray<FTransform> Posed = Component;
+				for (int32 Bone = 0; Bone < NumBones; ++Bone)
+				{
+					const int32 Parent = RefSkeleton.GetParentIndex(Bone);
+					if (IKSource[Bone] != INDEX_NONE)
+					{
+						Component[Bone] = Posed[IKSource[Bone]];
+						Local[Bone] = Parent == INDEX_NONE ? Component[Bone] : Component[Bone].GetRelativeTransform(Component[Parent]);
+					}
+					else if (Parent != INDEX_NONE)
+					{
+						Component[Bone] = Local[Bone] * Component[Parent];
+					}
+				}
+			}
+
+			for (int32 Bone = 0; Bone < NumBones; ++Bone)
+			{
+				if (bKeyed[Bone])
+				{
+					TrackPositions[Bone].Add(FVector3f(Local[Bone].GetTranslation()));
+					TrackRotations[Bone].Add(FQuat4f(Local[Bone].GetRotation().GetNormalized()));
 				}
 			}
 		}
 
+		TArray<FVector3f> Scales;
+		Scales.Init(FVector3f::OneVector, NumKeys);
 		for (int32 Bone = 0; Bone < NumBones; ++Bone)
 		{
-			const int32 JointIndex = BoneToJoint[Bone];
-			if (JointIndex == INDEX_NONE)
+			if (!bKeyed[Bone])
 			{
 				continue;
 			}
-			// Only the backend root moves; other bones keep the target's own bind offsets (its proportions).
-			const bool bIsRoot = Result.Joints[JointIndex].Parent == INDEX_NONE;
-			TArray<FVector3f> Positions;
-			if (bIsRoot)
-			{
-				Positions = RootPositions;
-			}
-			else
-			{
-				Positions.Init(FVector3f(RefPose[Bone].GetTranslation()), NumKeys);
-			}
-			TArray<FVector3f> Scales;
-			Scales.Init(FVector3f::OneVector, NumKeys);
 			const FName BoneName = RefSkeleton.GetBoneName(Bone);
 			Controller.AddBoneCurve(BoneName, bTransact);
-			Controller.SetBoneTrackKeys(BoneName, Positions, BoneRotations[Bone], Scales, bTransact);
+			Controller.SetBoneTrackKeys(BoneName, TrackPositions[Bone], TrackRotations[Bone], Scales, bTransact);
 		}
 
 		AddContactCurve(Controller, LeftContactCurve, Result.LeftFootContacts, Result.Fps, bTransact);
@@ -206,8 +267,14 @@ namespace
 	}
 }
 
+TMap<FName, FName> USovereignMotionBakeLibrary::DefaultIKBoneSources()
+{
+	return SovereignMotionBake::DefaultIKBoneSources();
+}
+
 UAnimSequence* USovereignMotionBakeLibrary::BakeResult(const FSovereignMotionResult& Result, USkeleton* Skeleton,
-	const FString& PackagePath, const FString& AssetName, bool bRelativeToStart, FString& OutMessage)
+	const FString& PackagePath, const FString& AssetName, bool bRelativeToStart,
+	const TMap<FName, FName>& IKBoneSources, FString& OutMessage)
 {
 	OutMessage.Reset();
 	TArray<int32> BoneToJoint;
@@ -230,7 +297,7 @@ UAnimSequence* USovereignMotionBakeLibrary::BakeResult(const FSovereignMotionRes
 	UAnimSequence* Sequence = NewObject<UAnimSequence>(
 		Package, FName(*FPackageName::GetShortName(PackageName)), RF_Public | RF_Standalone | RF_Transactional);
 	Sequence->SetSkeleton(Skeleton);
-	WriteKeys(*Sequence, Result, BoneToJoint, bRelativeToStart, /*bTransact=*/ true);
+	WriteKeys(*Sequence, Result, BoneToJoint, IKBoneSources, bRelativeToStart, /*bTransact=*/ true);
 
 	Sequence->PostEditChange();
 	Package->MarkPackageDirty();
@@ -242,7 +309,7 @@ UAnimSequence* USovereignMotionBakeLibrary::BakeResult(const FSovereignMotionRes
 }
 
 UAnimSequence* USovereignMotionBakeLibrary::BuildPreviewSequence(const FSovereignMotionResult& Result, USkeleton* Skeleton,
-	FString& OutError)
+	const TMap<FName, FName>& IKBoneSources, FString& OutError)
 {
 	TArray<int32> BoneToJoint;
 	if (!MapJoints(Result, Skeleton, BoneToJoint, OutError))
@@ -253,7 +320,7 @@ UAnimSequence* USovereignMotionBakeLibrary::BuildPreviewSequence(const FSovereig
 	// so a mesh at the world origin plays the clip exactly along the authored path.
 	UAnimSequence* Sequence = NewObject<UAnimSequence>(GetTransientPackage(), NAME_None, RF_Transient);
 	Sequence->SetSkeleton(Skeleton);
-	WriteKeys(*Sequence, Result, BoneToJoint, /*bRelativeToStart=*/ false, /*bTransact=*/ false);
+	WriteKeys(*Sequence, Result, BoneToJoint, IKBoneSources, /*bRelativeToStart=*/ false, /*bTransact=*/ false);
 	return Sequence;
 }
 

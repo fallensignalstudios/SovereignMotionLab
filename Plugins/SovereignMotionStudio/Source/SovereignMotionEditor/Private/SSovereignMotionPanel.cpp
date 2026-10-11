@@ -297,7 +297,7 @@ FReply SSovereignMotionPanel::OnBake()
 	}
 
 	UAnimSequence* Sequence = USovereignMotionBakeLibrary::BakeResult(
-		LastResult, Skeleton, Settings.PackagePath, Settings.AssetName, Settings.bRelativeToStart, Message);
+		LastResult, Skeleton, Settings.PackagePath, Settings.AssetName, Settings.bRelativeToStart, Settings.IKBoneSources, Message);
 	SetStatus(Message, Sequence == nullptr);
 	if (Sequence && Settings.bOpenAfterBake && GEditor)
 	{
@@ -364,7 +364,7 @@ bool SSovereignMotionPanel::RefreshPreview(FString& OutError)
 		return false;
 	}
 
-	UAnimSequence* Sequence = USovereignMotionBakeLibrary::BuildPreviewSequence(LastResult, Skeleton, OutError);
+	UAnimSequence* Sequence = USovereignMotionBakeLibrary::BuildPreviewSequence(LastResult, Skeleton, Settings.IKBoneSources, OutError);
 	if (!Sequence)
 	{
 		return false;
