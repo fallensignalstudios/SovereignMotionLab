@@ -6,6 +6,7 @@
 #include "SovereignMotionBakeLibrary.generated.h"
 
 class UAnimSequence;
+class USkeletalMesh;
 class USkeleton;
 
 USTRUCT(BlueprintType)
@@ -38,6 +39,10 @@ struct SOVEREIGNMOTIONEDITOR_API FSovereignBakeSettings
 	/** Open the new Animation Sequence in the animation editor after baking. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bake")
 	bool bOpenAfterBake = true;
+
+	/** Mesh used for the in-level preview. Leave empty to use the skeleton's preview mesh. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Preview")
+	TSoftObjectPtr<USkeletalMesh> PreviewMesh;
 };
 
 UCLASS()
@@ -54,6 +59,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sovereign Motion")
 	static UAnimSequence* BakeResult(const FSovereignMotionResult& Result, USkeleton* Skeleton,
 		const FString& PackagePath, const FString& AssetName, bool bRelativeToStart, FString& OutMessage);
+
+	/**
+	 * Build an unsaved Animation Sequence for previewing a result in the level. Root motion stays in
+	 * level space, so play it on a mesh placed at the world origin.
+	 */
+	static UAnimSequence* BuildPreviewSequence(const FSovereignMotionResult& Result, USkeleton* Skeleton, FString& OutError);
 
 	/** Load a result previously saved by the studio panel or the sidecar CLI (.json). */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign Motion")

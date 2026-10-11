@@ -11,6 +11,11 @@ from .result import MotionResult
 
 def world_positions(result: MotionResult, frame_index: int) -> list[Vec3]:
     """Forward kinematics for one frame. Joints are ordered parents-first."""
+    return world_transforms(result, frame_index)[0]
+
+
+def world_transforms(result: MotionResult, frame_index: int) -> tuple[list[Vec3], list[Quat]]:
+    """World positions and rotations of every joint for one frame."""
     frame = result.frames[frame_index]
     joints = result.skeleton.joints
     world_rot: list[Quat] = []
@@ -28,7 +33,7 @@ def world_positions(result: MotionResult, frame_index: int) -> list[Vec3]:
             rot = quat_mul(parent_rot, local_rot)
         world_pos.append(pos)
         world_rot.append(rot)
-    return world_pos
+    return world_pos, world_rot
 
 
 def foot_slide(result: MotionResult, left_foot: str, right_foot: str) -> dict:

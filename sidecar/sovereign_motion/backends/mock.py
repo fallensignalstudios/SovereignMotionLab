@@ -59,6 +59,10 @@ MOCK_SKELETON = Skeleton(
     ],
 )
 
+# Knee bend at full walking amplitude. Hips drop to match so the feet stay on the floor,
+# which leaves the legs slack enough for foot locking to reach planted feet.
+SOFT_KNEE_RAD = math.radians(22.0)
+
 REQUIRED_BONES = ("pelvis", "thigh_l", "calf_l", "foot_l", "thigh_r", "calf_r", "foot_r")
 MOCK_LEG_LENGTH_CM = 87.0
 
@@ -105,6 +109,11 @@ class HumanoidRig:
             if upper in names and lower in names:
                 self.arm_rest[side] = quat_from_to(skeleton.joints[names[lower]].offset, DOWN)
 
+    def hip_drop(self, amp: float) -> float:
+        """How far the root lowers for the soft-knee walk (thigh and shin each tilt by the bend)."""
+        bend = SOFT_KNEE_RAD * min(amp, 1.0)
+        return self.leg_length * (1.0 - math.cos(bend))
+
     def pose(self, yaw: float, phase: float, amp: float) -> list[Quat]:
         rotations = [IDENTITY] * len(self.skeleton.joints)
         idx = self.index
@@ -114,11 +123,15 @@ class HumanoidRig:
         thigh_swing = 0.45 * amp * math.sin(phase)
         knee_l = 0.9 * amp * max(0.0, math.cos(phase))
         knee_r = 0.9 * amp * max(0.0, -math.cos(phase))
-        rotations[idx["thigh_l"]] = quat_from_axis_angle(lateral, -thigh_swing)
-        rotations[idx["thigh_r"]] = quat_from_axis_angle(lateral, thigh_swing)
+        bend = SOFT_KNEE_RAD * min(amp, 1.0)
+        rotations[idx["thigh_l"]] = quat_from_axis_angle(lateral, -thigh_swing - bend)
+        rotations[idx["thigh_r"]] = quat_from_axis_angle(lateral, thigh_swing - bend)
         # Thighs rotate about the lateral axis, so it is unchanged in the calves' frames.
-        rotations[idx["calf_l"]] = quat_from_axis_angle(lateral, knee_l)
-        rotations[idx["calf_r"]] = quat_from_axis_angle(lateral, knee_r)
+        rotations[idx["calf_l"]] = quat_from_axis_angle(lateral, knee_l + 2.0 * bend)
+        rotations[idx["calf_r"]] = quat_from_axis_angle(lateral, knee_r + 2.0 * bend)
+        # Level the feet again after the soft-knee bend.
+        rotations[idx["foot_l"]] = quat_from_axis_angle(lateral, -bend)
+        rotations[idx["foot_r"]] = quat_from_axis_angle(lateral, -bend)
 
         # Arms counter-swing against the leg on the same side, with a slight elbow bend.
         arm_swing = 0.3 * amp * math.sin(phase)
@@ -239,7 +252,8 @@ class MockBackend(MotionBackend):
             amp = min(amp, 2.0)
             phase = 2.0 * math.pi * s / cycle_cm + phase_offset
 
-            frames.append(Frame(pos, rig.pose(yaw, phase, amp)))
+            root = (pos[0], pos[1], pos[2] - rig.hip_drop(amp))
+            frames.append(Frame(root, rig.pose(yaw, phase, amp)))
             if amp < 0.05:
                 left_contacts.append(True)
                 right_contacts.append(True)

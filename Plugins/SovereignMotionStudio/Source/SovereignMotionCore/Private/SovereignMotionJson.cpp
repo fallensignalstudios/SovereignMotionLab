@@ -139,6 +139,8 @@ FString SovereignMotionJson::RequestToJson(const FSovereignMotionRequest& Reques
 		Root->SetArrayField(TEXT("joint_targets"), Targets);
 	}
 
+	Root->SetBoolField(TEXT("foot_lock"), Request.bFootLock);
+
 	if (!Request.TextPrompt.IsEmpty())
 	{
 		Root->SetStringField(TEXT("text_prompt"), Request.TextPrompt);

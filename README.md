@@ -88,15 +88,33 @@ backends against.
 5. Place two or more actors in the level (Target Points work well) and select them in order: start,
    then any waypoints, then goal. Click **Use Level Selection**. Points are dropped onto the floor,
    and start and goal yaw come from the actors' rotations.
-6. Click **Generate**, then **Bake to Animation Sequence**. With Source Skeleton left empty it bakes
-   onto the target skeleton, makes root motion relative to the start, and opens the clip.
+6. Click **Generate**. Foot locking runs by default (toggle **Foot Lock** in the request), and the
+   status line reports slide before and after.
+7. Click **Preview in Level** to watch the clip play along its path on a temporary mesh (the
+   skeleton's preview mesh unless you set **Preview Mesh**). The actual root path is drawn, with the
+   start in green and the end in red. Nothing is saved. The viewport must be in Realtime mode (Ctrl+R).
+   Generating again while previewing updates the preview.
+8. Click **Bake to Animation Sequence**. With Source Skeleton left empty it bakes onto the target
+   skeleton, makes root motion relative to the start, and opens the clip.
    Requests and results are saved in `Saved/SovereignMotion/` so any clip can be regenerated.
 
 For backends that output their own skeleton (MotionBricks, once wired up), the result notes say
 so. Bake onto a skeleton matching theirs, then retarget with an IK Retargeter.
 
 Known gaps in the mock: IK helper bones (`ik_foot_*`, `ik_hand_*`) stay in their reference pose,
-and fingers, twist bones and spine don't move.
+and fingers, twist bones and spine don't move. It walks with soft knees and lowers the **root** bone
+a few cm to keep the feet on the floor, because results only carry root translation. Real backends
+supply their own hip motion.
+
+### Foot locking
+
+`sidecar/sovereign_motion/postprocess/footlock.py` runs after every backend. During each contact
+window from the result's foot contacts, the ankle is pinned where contact began, and thigh and calf
+are re-solved with two-bone IK. The knee keeps its bend plane and the foot keeps its orientation.
+After lift-off the foot eases back to the original motion over 4 frames. Frames where a planted
+foot is out of the leg's reach are counted and reported, since that usually points at a
+stride/contact mismatch in the source motion. On the example walk it takes mean slide from about
+50 cm/s to under 2 cm/s, on both the mock skeleton and the UE4 Mannequin.
 
 The sidecar URL is set in Project Settings > Plugins > Sovereign Motion Studio.
 `USovereignMotionBakeLibrary` exposes baking and result loading to Editor Utility Blueprints.
@@ -106,6 +124,7 @@ The sidecar URL is set in Project Settings > Plugins > Sovereign Motion Studio.
 | Stage | Goal |
 | --- | --- |
 | 0.0-editor (done) | Plugin round trip on our own skeleton with the mock: level points, generate, bake, open. |
+| 0.0-editor-2 (done) | Foot locking (sidecar post-process) and in-level preview. |
 | **0.0 spike** | Run MotionBricks for real, export, retarget by hand onto a Sovereign Call soldier, and judge quality. Go/no-go for the model. [Checklist](docs/spike-0.0.md). |
 | 0.1 | The designer's milestone: generate a walk to an editor-picked destination, preview it, bake it, with foot locking and no significant sliding. |
 | 0.2 | Viewport gizmos for trajectory and joint targets, plus regenerating part of a clip. |

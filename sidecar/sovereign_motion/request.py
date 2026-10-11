@@ -78,6 +78,8 @@ class MotionRequest:
     joint_targets: list[JointTarget] = field(default_factory=list)
     text_prompt: str | None = None
     gameplay_context: dict[str, Any] = field(default_factory=dict)
+    # Pin planted feet with IK after generation (postprocess/footlock.py).
+    foot_lock: bool = True
 
     def path_points(self) -> list[Vec3]:
         """Start, waypoints and goal as one polyline."""
@@ -210,6 +212,7 @@ def parse_request(data: dict[str, Any]) -> MotionRequest:
         joint_targets=targets,
         text_prompt=data.get("text_prompt"),
         gameplay_context=data.get("gameplay_context", {}),
+        foot_lock=bool(data.get("foot_lock", True)),
     )
 
 

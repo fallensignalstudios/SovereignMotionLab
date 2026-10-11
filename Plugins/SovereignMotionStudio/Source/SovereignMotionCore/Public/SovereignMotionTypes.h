@@ -101,6 +101,10 @@ struct SOVEREIGNMOTIONCORE_API FSovereignMotionRequest
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Constraints", meta = (MultiLine = true))
 	FString TextPrompt;
 
+	/** Pin planted feet with IK after generation, using the clip's foot contacts. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Post-Process")
+	bool bFootLock = true;
+
 	/** Recorded with the request for traceability; backends ignore these unless mapped. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay Context")
 	TArray<FString> GameplayTags;

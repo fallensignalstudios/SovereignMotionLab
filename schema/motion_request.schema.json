@@ -188,6 +188,11 @@
     "gameplay_context": {
       "type": "object",
       "description": "Free-form tags recorded for traceability (e.g. GameplayTags, StateTree state). Backends ignore this unless the adapter explicitly maps a key."
+    },
+    "foot_lock": {
+      "type": "boolean",
+      "default": true,
+      "description": "Pin planted feet with two-bone IK after generation, using the result's foot contacts."
     }
   },
   "$defs": {

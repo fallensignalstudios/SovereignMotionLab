@@ -16,7 +16,8 @@ from sovereign_motion.backends import BackendUnavailable, get_backend
 from sovereign_motion.backends.motionbricks import build_constraints
 from sovereign_motion.export.bvh import quat_to_euler_zxy_deg, to_bvh
 from sovereign_motion.mathutil import quat_from_axis_angle, quat_mul
-from sovereign_motion.metrics import foot_slide, world_positions
+from sovereign_motion.metrics import foot_slide, world_positions, world_transforms
+from sovereign_motion.postprocess.footlock import lock_feet
 from sovereign_motion.pipeline import run_json
 from sovereign_motion.request import RequestError, parse_request
 from sovereign_motion.result import Frame, Joint, MotionResult, Skeleton
@@ -181,6 +182,53 @@ class TargetSkeletonTests(unittest.TestCase):
         finally:
             pipeline.get_backend = original
         self.assertTrue(any("needs retargeting" in n for n in result.diagnostics["notes"]))
+
+
+class FootLockTests(unittest.TestCase):
+    def _pair(self, data: dict):
+        unlocked = dict(data, foot_lock=False)
+        return run_json(unlocked), run_json(data)
+
+    def test_reduces_slide_on_both_skeletons(self):
+        for name, data in (("mock", example()), ("mannequin", mannequin_request())):
+            with self.subTest(skeleton=name):
+                raw, locked = self._pair(data)
+                before = foot_slide(raw, "foot_l", "foot_r")["mean_cm_s"]
+                after = foot_slide(locked, "foot_l", "foot_r")["mean_cm_s"]
+                self.assertGreater(before, 30.0)
+                self.assertLess(after, 3.0)
+
+    def test_planted_foot_keeps_orientation_and_hip_stays(self):
+        raw, locked = self._pair(mannequin_request())
+        idx = raw.skeleton.index
+        f = next(i for i in range(len(raw.frames)) if raw.left_contacts[i] and i > 30)
+        (raw_pos, raw_rot), (lock_pos, lock_rot) = world_transforms(raw, f), world_transforms(locked, f)
+        for a, b in zip(raw_rot[idx("foot_l")], lock_rot[idx("foot_l")]):
+            self.assertAlmostEqual(abs(a), abs(b), places=5)
+        for a, b in zip(raw_pos[idx("thigh_l")], lock_pos[idx("thigh_l")]):
+            self.assertAlmostEqual(a, b, places=6)
+
+    def test_swing_frames_outside_blend_are_untouched(self):
+        raw, locked = self._pair(example())
+        thigh = raw.skeleton.index("thigh_l")
+        contacts = raw.left_contacts
+        for f in range(len(contacts)):
+            recent = any(contacts[max(0, f - 5):f + 1])
+            if not recent:
+                self.assertEqual(raw.frames[f].rotations[thigh], locked.frames[f].rotations[thigh])
+
+    def test_skips_skeleton_without_leg_chain(self):
+        skeleton = Skeleton("t", [Joint("root", -1, (0, 0, 0)), Joint("foot_l", 0, (0, -10, 0))])
+        frames = [Frame((0.0, 0.0, 0.0), [(0.0, 0.0, 0.0, 1.0)] * 2)] * 3
+        result = MotionResult("t", "test", 30, skeleton, frames, [True] * 3, [True] * 3)
+        locked, notes = lock_feet(result)
+        self.assertIs(locked, result)
+        self.assertTrue(any("skipped" in n for n in notes))
+
+    def test_reports_result_in_diagnostics(self):
+        result = run_json(example())
+        self.assertIn("foot_slide_after_cm_s", result.diagnostics)
+        self.assertTrue(any(n.startswith("foot lock:") for n in result.diagnostics["notes"]))
 
 
 class MotionBricksAdapterTests(unittest.TestCase):
