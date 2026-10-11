@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+sidecar/out/
+
+# Model checkpoints are large and licensed separately; keep them out of git
+checkpoints/
+*.ckpt
+*.pt
+*.safetensors
+
+# Unreal
+Plugins/*/Binaries/
+Plugins/*/Intermediate/

@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sovereigncall.local/schema/motion_request/1.0",
+  "title": "Sovereign Motion Request",
+  "description": "Everything a backend needs to generate one motion clip. Unreal conventions throughout: Z-up, X-forward, centimeters, seconds, degrees. The request is saved next to every baked animation so a clip can be regenerated exactly.",
+  "type": "object",
+  "required": ["schema_version", "request_id", "backend", "character", "start", "goal"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "request_id": { "type": "string", "minLength": 1 },
+    "backend": {
+      "type": "string",
+      "description": "Registered backend name, e.g. \"mock\" or \"motionbricks\"."
+    },
+    "seed": { "type": "integer", "default": 0 },
+    "fps": { "type": "integer", "minimum": 1, "maximum": 240, "default": 30 },
+    "character": {
+      "type": "object",
+      "required": ["skeleton_id"],
+      "additionalProperties": false,
+      "properties": {
+        "skeleton_id": {
+          "type": "string",
+          "description": "Target skeleton the clip will be retargeted onto (informational for now; the backend outputs its own skeleton)."
+        },
+        "profile": {
+          "type": "string",
+          "description": "Name of a character profile in sidecar/profiles/. Profiles translate semantic traits (armor weight, injury) into numeric limits."
+        },
+        "height_cm": { "type": "number", "exclusiveMinimum": 0 },
+        "max_speed_cm_s": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "start": { "$ref": "#/$defs/root_state" },
+    "goal": {
+      "allOf": [
+        { "$ref": "#/$defs/root_state" },
+        {
+          "properties": {
+            "arrive_by_s": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Optional deadline. Omit to let the backend pick timing from locomotion speed."
+            }
+          }
+        }
+      ]
+    },
+    "trajectory": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "waypoints": {
+          "type": "array",
+          "description": "Intermediate root positions between start and goal, in order.",
+          "items": { "$ref": "#/$defs/vec3" }
+        }
+      }
+    },
+    "locomotion": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "style": {
+          "type": "string",
+          "enum": ["idle", "walk", "jog", "run", "crouch_walk"],
+          "default": "walk"
+        },
+        "speed_cm_s": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "joint_targets": {
+      "type": "array",
+      "description": "Sparse pose constraints: pin a hand on a terminal, plant a foot, etc.",
+      "items": {
+        "type": "object",
+        "required": ["joint", "time_s"],
+        "additionalProperties": false,
+        "properties": {
+          "joint": { "type": "string" },
+          "time_s": { "type": "number", "minimum": 0 },
+          "location": { "$ref": "#/$defs/vec3" },
+          "rotation": { "$ref": "#/$defs/quat" },
+          "hard": {
+            "type": "boolean",
+            "default": false,
+            "description": "Hard targets are re-enforced in Unreal with IK after generation; soft targets are hints to the model."
+          }
+        }
+      }
+    },
+    "text_prompt": { "type": "string" },
+    "gameplay_context": {
+      "type": "object",
+      "description": "Free-form tags recorded for traceability (e.g. GameplayTags, StateTree state). Backends ignore this unless the adapter explicitly maps a key."
+    }
+  },
+  "$defs": {
+    "vec3": {
+      "type": "array",
+      "items": { "type": "number" },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "quat": {
+      "type": "array",
+      "description": "Quaternion as [x, y, z, w].",
+      "items": { "type": "number" },
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "root_state": {
+      "type": "object",
+      "required": ["root_location"],
+      "properties": {
+        "root_location": { "$ref": "#/$defs/vec3" },
+        "root_yaw_deg": { "type": "number", "default": 0 }
+      }
+    }
+  }
+}

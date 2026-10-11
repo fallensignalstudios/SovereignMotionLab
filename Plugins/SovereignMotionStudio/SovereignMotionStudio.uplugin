@@ -1,0 +1,25 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "0.0.1",
+	"FriendlyName": "Sovereign Motion Studio",
+	"Description": "Contextual motion authoring: build motion requests in the editor, generate clips through a local model sidecar, and bake them to Animation Sequences.",
+	"Category": "Animation",
+	"CreatedBy": "Fallen Signal Studios",
+	"CanContainContent": true,
+	"IsBetaVersion": true,
+	"IsExperimentalVersion": true,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "SovereignMotionCore",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "SovereignMotionEditor",
+			"Type": "Editor",
+			"LoadingPhase": "PostEngineInit"
+		}
+	]
+}

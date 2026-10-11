@@ -1,0 +1,11 @@
+{
+  "description": "Dominion soldier in heavy armor: slower, shorter top speed. Placeholder numbers; tune against reference footage.",
+  "height_cm": 185,
+  "max_speed_cm_s": 420,
+  "speed_scale": {
+    "walk": 0.85,
+    "jog": 0.8,
+    "run": 0.8,
+    "crouch_walk": 0.75
+  }
+}

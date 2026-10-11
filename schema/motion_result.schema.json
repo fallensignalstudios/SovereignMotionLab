@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sovereigncall.local/schema/motion_result/1.0",
+  "title": "Sovereign Motion Result",
+  "description": "A generated clip on the backend's own skeleton. Unreal conventions: Z-up, X-forward, centimeters. Rotations are joint-local quaternions [x, y, z, w] relative to a bind pose in which every joint rotation is identity (the bind pose is just the joint offsets); backends must convert to this convention. Retargeting onto game skeletons happens in Unreal, not here.",
+  "type": "object",
+  "required": ["schema_version", "request_id", "backend", "fps", "skeleton", "frames", "foot_contacts"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "request_id": { "type": "string" },
+    "backend": { "type": "string" },
+    "fps": { "type": "integer", "minimum": 1 },
+    "skeleton": {
+      "type": "object",
+      "required": ["name", "joints"],
+      "properties": {
+        "name": { "type": "string" },
+        "joints": {
+          "type": "array",
+          "description": "Parents always come before children. joints[0] is the root and receives root_translation.",
+          "items": {
+            "type": "object",
+            "required": ["name", "parent", "offset"],
+            "properties": {
+              "name": { "type": "string" },
+              "parent": { "type": "integer", "minimum": -1 },
+              "offset": {
+                "type": "array",
+                "items": { "type": "number" },
+                "minItems": 3,
+                "maxItems": 3,
+                "description": "Bind-pose local translation from the parent joint."
+              }
+            }
+          }
+        }
+      }
+    },
+    "frames": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["root_translation", "rotations"],
+        "properties": {
+          "root_translation": {
+            "type": "array",
+            "items": { "type": "number" },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "rotations": {
+            "type": "array",
+            "description": "One quaternion per joint, same order as skeleton.joints.",
+            "items": {
+              "type": "array",
+              "items": { "type": "number" },
+              "minItems": 4,
+              "maxItems": 4
+            }
+          }
+        }
+      }
+    },
+    "foot_contacts": {
+      "type": "object",
+      "description": "Per-frame contact flags used by the foot-locking pass in Unreal.",
+      "required": ["left", "right"],
+      "properties": {
+        "left": { "type": "array", "items": { "type": "boolean" } },
+        "right": { "type": "array", "items": { "type": "boolean" } }
+      }
+    },
+    "diagnostics": {
+      "type": "object",
+      "description": "Backend notes: timings, clamped speeds, ignored constraints."
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "request_id": "dominion_walk_to_terminal_001",
+  "backend": "mock",
+  "seed": 7,
+  "fps": 30,
+  "character": {
+    "skeleton_id": "SK_DominionSoldier",
+    "profile": "dominion_heavy"
+  },
+  "start": { "root_location": [0, 0, 0], "root_yaw_deg": 0 },
+  "goal": { "root_location": [600, 250, 0], "root_yaw_deg": 90 },
+  "trajectory": { "waypoints": [[300, 0, 0]] },
+  "locomotion": { "style": "walk" },
+  "joint_targets": [
+    { "joint": "hand_r", "time_s": 5.0, "location": [620, 300, 110], "hard": true }
+  ],
+  "text_prompt": "soldier walks to a terminal and reaches for the panel",
+  "gameplay_context": {
+    "tags": ["State.Interacting", "Equipment.Weapon.Holstered"]
+  }
+}

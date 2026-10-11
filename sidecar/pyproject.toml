@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sovereign-motion"
+version = "0.0.1"
+description = "Local motion-generation sidecar for the Sovereign Motion Studio UE5 plugin"
+requires-python = ">=3.10"
+# The core service is stdlib-only so it runs on any machine. Real model
+# backends pull in their own heavy dependencies via extras.
+dependencies = []
+
+[project.optional-dependencies]
+motionbricks = [
+    # Pin these to whatever the MotionBricks repo's requirements specify once
+    # it is cloned locally; left open on purpose until the 0.0 spike runs.
+    "numpy",
+    "torch",
+]
+
+[project.scripts]
+sovereign-motion = "sovereign_motion.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["sovereign_motion*"]
