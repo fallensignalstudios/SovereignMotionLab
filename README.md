@@ -85,9 +85,19 @@ backends against.
    Its reference pose is sent with the request, and the mock animates it directly. Limbs are found by
    standard Mannequin bone names (`pelvis`, `thigh_l`, `calf_l`, `foot_l`, `ball_l`, `upperarm_l`,
    `lowerarm_l`, ...), and the mesh's facing comes from its feet.
-5. Place two or more actors in the level (Target Points work well) and select them in order: start,
-   then any waypoints, then goal. Click **Use Level Selection**. Points are dropped onto the floor,
-   and start and goal yaw come from the actors' rotations.
+5. Lay out the path. Either:
+   - Click **New Path**. A **Sovereign Motion Path** (a spline) appears in front of the camera, already
+     selected. Click a point and drag it; Alt-drag a point to add one; right-click a point for more.
+     The first point is the start, the last is the goal, and the curve is sampled into waypoints
+     every 50 cm (**Sample Spacing**). Points snap to the floor, and the clip faces along the path
+     unless **Face Along Path** is off. Paths are saved with the level, so you can keep and reuse
+     them; they're editor-only and stripped from game builds. To reuse one, select it and click
+     **Use Level Selection**.
+   - Or place actors (Target Points work well), select them in order (start, any waypoints, goal),
+     and click **Use Level Selection**.
+
+   With **Auto-regenerate** on (the default), editing or moving the bound path regenerates the clip
+   about a quarter-second after you stop dragging, and the preview (step 7) updates to match.
 6. Click **Generate**. Foot locking runs by default (toggle **Foot Lock** in the request), and the
    status line reports slide before and after.
 7. Click **Preview in Level** to watch the clip play along its path on a temporary mesh (the
@@ -135,6 +145,7 @@ The sidecar URL is set in Project Settings > Plugins > Sovereign Motion Studio.
 | --- | --- |
 | 0.0-editor (done) | Plugin round trip on our own skeleton with the mock: level points, generate, bake, open. |
 | 0.0-editor-2 (done) | Foot locking (sidecar post-process) and in-level preview. |
+| 0.0-editor-3 (done) | IK bones driven on bake/preview; draggable spline paths with auto-regenerate. |
 | **0.0 spike** | Run MotionBricks for real, export, retarget by hand onto a Sovereign Call soldier, and judge quality. Go/no-go for the model. [Checklist](docs/spike-0.0.md). |
 | 0.1 | The designer's milestone: generate a walk to an editor-picked destination, preview it, bake it, with foot locking and no significant sliding. |
 | 0.2 | Viewport gizmos for trajectory and joint targets, plus regenerating part of a clip. |

@@ -205,6 +205,39 @@ class TargetSkeletonTests(unittest.TestCase):
         self.assertTrue(any("needs retargeting" in n for n in result.diagnostics["notes"]))
 
 
+class CurvedPathTests(unittest.TestCase):
+    """Dense waypoints, as sampled from a Sovereign Motion Path spline in the editor."""
+
+    def setUp(self):
+        radius = 400.0
+        samples = int(radius * math.pi / 2 / 50)  # every ~50 cm, like the path actor
+        points = [
+            [radius * math.sin(a), radius - radius * math.cos(a), 0.0]
+            for a in (math.pi / 2 * i / samples for i in range(samples + 1))
+        ]
+        data = mannequin_request("ue5_manny")
+        data["start"] = {"root_location": points[0], "root_yaw_deg": 0.0}
+        data["goal"] = {"root_location": points[-1], "root_yaw_deg": 90.0}
+        data["trajectory"] = {"waypoints": points[1:-1]}
+        self.radius = radius
+        self.result = run_json(data)
+
+    def test_root_follows_the_curve(self):
+        for frame in self.result.frames:
+            x, y, _ = frame.root_translation
+            self.assertAlmostEqual(math.hypot(x, y - self.radius), self.radius, delta=3.0)
+
+    def test_turns_smoothly(self):
+        # Root yaw should never jump between frames on a gentle curve.
+        yaws = [2 * math.atan2(f.rotations[0][2], f.rotations[0][3]) for f in self.result.frames]
+        for a, b in zip(yaws, yaws[1:]):
+            step = abs((b - a + math.pi) % (2 * math.pi) - math.pi)
+            self.assertLess(math.degrees(step), 10.0)
+
+    def test_feet_stay_planted(self):
+        self.assertLess(foot_slide(self.result, "foot_l", "foot_r")["mean_cm_s"], 3.0)
+
+
 class FootLockTests(unittest.TestCase):
     def _pair(self, data: dict):
         unlocked = dict(data, foot_lock=False)
