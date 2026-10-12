@@ -4,35 +4,42 @@ The goal is to answer the riskiest question before building more editor UI: **do
 public MotionBricks weights look acceptable on Sovereign Call characters?** Budget: a few days.
 The result is a go/no-go, not shippable code.
 
-## Facts to confirm from the repo (don't assume)
+## Facts confirmed from the repo
 
-Write the answers into this file as you find them.
+Checked against NVlabs/GR00T-WholeBodyControl at commit `b042411f` (the `motionbricks/` folder).
 
-- [ ] Exact repo URL, commit tested, and license files for both code and weights.
-- [ ] Which skeleton the released weights output (joint count, names, rest pose). Reported as a
-      Unitree G1 robot skeleton; confirm it.
-- [ ] What training data the released weights cover (human mocap? robot data?). This decides
-      whether the motion will look human.
-- [ ] Which inputs the public inference code actually accepts: keyframes, sparse joint targets,
-      2D waypoints, dense paths, text, smart primitives.
-- [ ] Model coordinate conventions: up axis, units, handedness, frame rate.
-- [ ] GPU and VRAM needed, and time per clip.
-- [ ] Whether the model exports to ONNX (decides whether runtime use in 0.4 is possible).
+- [x] **Location and licenses:** github.com/NVlabs/GR00T-WholeBodyControl, folder `motionbricks/`.
+      There is no standalone repo. The repository LICENSE is dual: Apache 2.0 for source code, and
+      the NVIDIA Open Model License for weights (commercial use allowed with attribution).
+- [x] **Output skeleton:** Unitree G1, 29 DOF. In MuJoCo that is 30 bodies, `qpos` of 36 values.
+      The model's internal representation is a 34-joint G1 (two dummy toes).
+- [x] **Training data:** BONES-SEED, about 350k clips of human mocap retargeted onto the G1. The
+      motion is human-derived; the proportions are a robot's.
+- [x] **Inputs:** the public `motion_inference.predict` takes context and target keyframes (root and
+      pose) plus a token count. Text-embedding inputs exist but are unused in the preview. The
+      shipped agent (`full_navigation_agent`) is steered by movement direction, facing direction,
+      style mode, optional target speed, and optional specific target positions and headings.
+- [x] **Styles in the preview:** idle, slow_walk, walk, hand_crawling, walk_boxing, elbow_crawling,
+      stealth_walk, injured_walk, walk_stealth, walk_happy_dance, walk_zombie, walk_gun, walk_scared,
+      walk_left, walk_right. There's no run.
+- [x] **Conventions:** the motion space is Y-up, Z-forward, right-handed. MuJoCo is Z-up, X-forward.
+      Units are meters, 30 fps, 4 frames per token.
+- [ ] GPU and VRAM needed, and time per clip: **measure on the work PC.**
+- [ ] ONNX export: the code mentions ONNX/TensorRT paths ("prebaked inference engine") but they are
+      not implemented in the preview. A community GGML/C++ port exists (localai-org/motion-bricks.cpp).
 
 ## Steps
 
-1. Clone the MotionBricks repo and download the weights outside this repo
-   (`checkpoints/` is gitignored). Get NVIDIA's own example script running first.
-2. Generate three clips with NVIDIA's tools: a straight walk, a walk with a turn, and a
-   reach-to-target if supported.
-3. Fill in `generate()` in `sidecar/sovereign_motion/backends/motionbricks.py`. Map
-   `build_constraints()` onto the real inputs, then convert the output to the result convention
-   (Unreal axes, cm, identity-rotation bind pose). Cache the loaded model on the backend instance.
-4. Run the example request through `--backend motionbricks`, then run `evaluate` and compare its
-   foot slide with the mock baseline.
-5. Bring the BVH into UE5 (Blender: Up = Z, Forward = X, Scale = 0.01, then export FBX). Set up an
-   IK Retargeter from the backend skeleton to a Dominion soldier, and retarget the clips.
-6. Review the clips in UE5 with the animation lead.
+1. ~~Clone and read the code.~~ Done.
+2. ~~Implement the backend.~~ Done: `sidecar/sovereign_motion/backends/motionbricks.py` drives
+   NVIDIA's agent with a path-following controller. `g1.py` converts the G1 output with MuJoCo FK,
+   and `retarget.py` maps it onto Mannequin skeletons. Everything except the neural network itself
+   is tested on CPU with a fake agent.
+3. **On the GPU PC:** follow [motionbricks-setup.md](motionbricks-setup.md), run the smoke test,
+   and record time per clip and foot slide against the mock.
+4. Preview MotionBricks clips on Manny in the Studio tab, with a few styles (`walk_gun`,
+   `injured_walk`).
+5. Review with the animation lead.
 
 ## Go / no-go
 

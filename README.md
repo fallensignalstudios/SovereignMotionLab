@@ -10,8 +10,8 @@ The workflow, request format and Unreal tools are the durable part. Models are s
 > Status: **early prototype**. The sidecar runs end to end with a procedural mock backend and is
 > tested. The UE5 plugin builds and loads. The editor round trip (pick points in the level,
 > generate on your own skeleton, bake, open) is written but not yet verified in-engine.
-> The MotionBricks adapter translates requests but doesn't call the model yet; see
-> [docs/spike-0.0.md](docs/spike-0.0.md).
+> The MotionBricks backend is implemented and tested on CPU with a stand-in for the network. It
+> still needs its first real run on a GPU; see [docs/motionbricks-setup.md](docs/motionbricks-setup.md).
 
 ## How it fits together
 

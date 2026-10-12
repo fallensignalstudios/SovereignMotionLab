@@ -111,6 +111,10 @@ FString SovereignMotionJson::RequestToJson(const FSovereignMotionRequest& Reques
 
 	TSharedRef<FJsonObject> Locomotion = MakeShared<FJsonObject>();
 	Locomotion->SetStringField(TEXT("style"), Request.LocomotionStyle);
+	if (!Request.BackendStyle.IsEmpty())
+	{
+		Locomotion->SetStringField(TEXT("backend_style"), Request.BackendStyle);
+	}
 	if (Request.SpeedCmS > 0.f)
 	{
 		Locomotion->SetNumberField(TEXT("speed_cm_s"), Request.SpeedCmS);

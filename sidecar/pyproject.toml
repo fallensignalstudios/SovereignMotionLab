@@ -13,10 +13,10 @@ dependencies = []
 
 [project.optional-dependencies]
 motionbricks = [
-    # Pin these to whatever the MotionBricks repo's requirements specify once
-    # it is cloned locally; left open on purpose until the 0.0 spike runs.
+    # MotionBricks itself is installed from NVIDIA's repo (see docs/motionbricks-setup.md);
+    # these are what the sidecar's own G1 conversion needs. Install torch with CUDA separately.
     "numpy",
-    "torch",
+    "mujoco>=3.0",
 ]
 
 [project.scripts]

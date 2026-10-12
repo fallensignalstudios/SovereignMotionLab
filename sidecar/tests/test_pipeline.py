@@ -292,10 +292,11 @@ class MotionBricksAdapterTests(unittest.TestCase):
         with self.assertRaises(BackendUnavailable):
             run_json(data)
 
-    def test_constraints_scale_to_meters(self):
+    def test_constraints_are_in_meters(self):
+        # The example walks 600 cm forward then turns; the agent sees meters in its own frame.
         constraints = build_constraints(parse_request(example()))
-        self.assertEqual(constraints["root_waypoints_2d"][-1], (6.0, 2.5))
-        self.assertTrue(constraints["joint_targets"][0]["hard"])
+        self.assertAlmostEqual(constraints["path_m"][1][0], 3.0, places=6)
+        self.assertEqual(constraints["mode"], "walk")
 
 
 class BvhTests(unittest.TestCase):

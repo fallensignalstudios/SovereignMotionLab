@@ -147,6 +147,10 @@
         "speed_cm_s": {
           "type": "number",
           "exclusiveMinimum": 0
+        },
+        "backend_style": {
+          "type": "string",
+          "description": "Backend-specific style that overrides style, e.g. a MotionBricks mode: walk_gun, injured_walk, walk_zombie, walk_stealth, stealth_walk, walk_scared, walk_boxing, walk_happy_dance, slow_walk, hand_crawling, elbow_crawling."
         }
       }
     },

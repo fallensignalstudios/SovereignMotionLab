@@ -1,6 +1,7 @@
 """Command line entry point.
 
     python -m sovereign_motion generate ../examples/requests/dominion_soldier_walk.json --out out/walk
+    python -m sovereign_motion generate REQUEST.json --backend motionbricks --skeleton tests/fixtures/ue5_manny_skeleton.json
     python -m sovereign_motion serve --port 8765
     python -m sovereign_motion backends
     python -m sovereign_motion evaluate out/walk.json --left-foot foot_l --right-foot foot_r
@@ -19,7 +20,7 @@ from .backends import BackendUnavailable, backend_names, get_backend
 from .export.bvh import write_bvh
 from .metrics import foot_slide
 from .pipeline import run
-from .request import RequestError, load_request
+from .request import RequestError, load_request, parse_skeleton
 from .result import MotionResult
 
 
@@ -28,6 +29,10 @@ def _generate(args: argparse.Namespace) -> int:
         request = load_request(args.request)
         if args.backend:
             request = dataclasses.replace(request, backend=args.backend)
+        if args.skeleton:
+            with open(args.skeleton, encoding="utf-8") as f:
+                skeleton = parse_skeleton(json.load(f), "skeleton file")
+            request = dataclasses.replace(request, character=dataclasses.replace(request.character, skeleton=skeleton))
         result = run(request)
     except (RequestError, BackendUnavailable, KeyError) as exc:
         print(f"error: {exc}", file=sys.stderr)
@@ -84,6 +89,7 @@ def main(argv: list[str] | None = None) -> int:
     gen.add_argument("request", help="path to a motion request JSON file")
     gen.add_argument("--out", default="out/motion", help="output path without extension")
     gen.add_argument("--backend", help="override the request's backend")
+    gen.add_argument("--skeleton", help="target skeleton JSON (e.g. tests/fixtures/ue5_manny_skeleton.json)")
     gen.set_defaults(func=_generate)
 
     srv = sub.add_parser("serve", help="run the local HTTP service for the Unreal plugin")

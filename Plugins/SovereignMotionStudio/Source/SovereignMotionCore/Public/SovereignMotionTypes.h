@@ -91,6 +91,14 @@ struct SOVEREIGNMOTIONCORE_API FSovereignMotionRequest
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Locomotion")
 	FString LocomotionStyle = TEXT("walk");
 
+	/**
+	 * Backend-specific style that overrides Locomotion Style. For MotionBricks: walk_gun, injured_walk,
+	 * walk_zombie, walk_stealth, stealth_walk, walk_scared, walk_boxing, walk_happy_dance, slow_walk,
+	 * hand_crawling, elbow_crawling. Leave empty to use Locomotion Style.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Locomotion")
+	FString BackendStyle;
+
 	/** Speed in cm/s. 0 uses the style default (after profile scaling). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Locomotion", meta = (ClampMin = "0"))
 	float SpeedCmS = 0.f;

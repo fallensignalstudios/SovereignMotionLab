@@ -53,6 +53,8 @@ class Goal(RootState):
 class Locomotion:
     style: str = "walk"
     speed_cm_s: float | None = None
+    # Backend-specific style name, e.g. a MotionBricks clip mode such as "walk_gun".
+    backend_style: str | None = None
 
 
 @dataclass
@@ -171,6 +173,7 @@ def parse_request(data: dict[str, Any]) -> MotionRequest:
     locomotion = Locomotion(
         style=loco_raw.get("style", "walk"),
         speed_cm_s=loco_raw.get("speed_cm_s"),
+        backend_style=loco_raw.get("backend_style") or None,
     )
     if locomotion.style not in LOCOMOTION_STYLES:
         raise RequestError(f"locomotion.style must be one of {', '.join(LOCOMOTION_STYLES)}")
